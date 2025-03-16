@@ -55,6 +55,8 @@ body {
 .el-carousel__container {
   border-radius: 0.5rem;
   overflow: hidden;
+  aspect-ratio: 13/5;
+  background-color: #0a0e17;
 }
 
 /* Borda minimalista para cada item do carrossel no desktop */
@@ -62,6 +64,22 @@ body {
   .el-carousel__item {
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+  
+  .el-carousel__item > div {
+    background-size: contain !important;
+    background-repeat: no-repeat !important;
+    background-position: center !important;
+    height: 100%;
+    width: 100%;
+  }
+  
+  .el-carousel--card .el-carousel__item {
+    width: 100% !important;
+  }
+  
+  .el-carousel--card .el-carousel__container {
+    height: auto !important;
   }
 }
 

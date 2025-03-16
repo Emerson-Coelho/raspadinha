@@ -17,26 +17,17 @@ const latestWinners = ref<any[]>([]);
 const promoSlides = ref([
   {
     id: 1,
-    title: 'Raspadinhas Premiadas',
-    description: 'Experimente nossas raspadinhas e ganhe prêmios instantâneos!',
-    image: 'https://dummyimage.com/1200x600/1a1a2e/ffffff?text=Raspadinhas+Premiadas',
-    buttonText: 'Jogar Agora',
+    image: 'https://picsum.photos/id/1/1200/462',
     route: '/games/scratch-card'
   },
   {
     id: 2,
-    title: 'Números da Sorte',
-    description: 'Escolha seus números e concorra a prêmios incríveis!',
-    image: 'https://dummyimage.com/1200x600/1a1a2e/ffffff?text=Números+da+Sorte',
-    buttonText: 'Participar',
+    image: 'https://picsum.photos/id/2/1200/462',
     route: '/games/lucky-number'
   },
   {
     id: 3,
-    title: 'Bônus de Boas-vindas',
-    description: 'Cadastre-se hoje e ganhe um bônus para começar a jogar!',
-    image: 'https://dummyimage.com/1200x600/1a1a2e/ffffff?text=Bônus+de+Boas-vindas',
-    buttonText: 'Cadastrar',
+    image: 'https://picsum.photos/id/3/1200/462',
     route: '/auth/register'
   }
 ]);
@@ -162,9 +153,12 @@ function handleTouchEnd(event: TouchEvent) {
 }
 
 function handleMouseDown(event: MouseEvent) {
-  touchStartX.value = event.clientX;
-  document.addEventListener('mouseup', handleMouseUp);
-  document.addEventListener('mousemove', handleMouseMove);
+  // Verificar se o clique foi feito com o botão esquerdo do mouse
+  if (event.button === 0) {
+    touchStartX.value = event.clientX;
+    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('mousemove', handleMouseMove);
+  }
 }
 
 function handleMouseUp(event: MouseEvent) {
@@ -197,173 +191,168 @@ function handleSwipe() {
   <DefaultLayout :showHeader="false" :showFooter="false">
     <div class="max-w-7xl mx-auto px-4 md:px-6">
       <!-- Banner Principal -->
-      <section class="mb-12 -mx-4 md:mx-0">
-        <ElCarousel 
-          ref="carouselRef"
-          :interval="5000" 
-          :type="isMobile ? '' : 'card'" 
-          :height="isMobile ? '200px' : '400px'"
-          :autoplay="true"
-          indicator-position="outside"
-          arrow="always"
-          @change="handleCarouselChange"
-        >
-          <ElCarouselItem 
-            v-for="slide in promoSlides" 
-            :key="slide.id"
-            @touchstart="handleTouchStart"
-            @touchend="handleTouchEnd"
-            @mousedown="handleMouseDown"
-          >
-            <div 
-              class="h-full w-full rounded-lg overflow-hidden relative bg-cover bg-center"
-              :style="{ backgroundImage: `url(${slide.image})` }"
+      <section class="mb-12 -mx-4 md:mx-0 flex justify-center md:pt-6">
+            <ElCarousel 
+              ref="carouselRef"
+              :interval="5000" 
+              type=""
+              height="auto"
+              :autoplay="true"
+              indicator-position="outside"
+              arrow="always"
+              @change="handleCarouselChange"
+              class="banner-carousel"
             >
-              <div class="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent opacity-80"></div>
-              <div class="absolute bottom-0 left-0 p-3 md:p-5 text-white max-w-[90%] md:max-w-[80%]">
-                <h2 class="text-lg md:text-2xl font-bold mb-1 md:mb-2">{{ slide.title }}</h2>
-                <p class="text-xs md:text-base mb-2 md:mb-3 line-clamp-2">{{ slide.description }}</p>
-                <button 
-                  @click="(e) => { e.stopPropagation(); navigateTo(slide.route); }" 
-                  class="btn-primary text-xs md:text-sm py-1 px-2 md:px-3"
+              <ElCarouselItem 
+                v-for="slide in promoSlides" 
+                :key="slide.id"
+                @touchstart="handleTouchStart"
+                @touchend="handleTouchEnd"
+                @mousedown="handleMouseDown"
+                class="banner-item"
+              >
+                <div 
+                  class="h-full w-full rounded-lg overflow-hidden relative cursor-pointer banner-content"
+                  :style="{ backgroundImage: `url(${slide.image})` }"
+                  @click="navigateTo(slide.route)"
                 >
-                  {{ slide.buttonText }}
+                </div>
+              </ElCarouselItem>
+            </ElCarousel>
+      </section>
+      
+      <!-- Conteúdo restante com padding normal -->
+      <div class="px-4">
+        <!-- Seção Promocional Ativa -->
+        <section class="mb-12 card p-4 md:p-8">
+          <div class="flex flex-col md:flex-row items-center">
+            <div class="md:w-1/2 mb-6 md:mb-0 md:pr-8">
+              <h2 class="text-2xl font-bold text-white mb-4">Promoção Especial</h2>
+              <p class="text-gray-300 mb-6">
+                Aproveite nossa promoção especial! Faça um depósito hoje e ganhe 50% de bônus para jogar em nossas raspadinhas e números da sorte.
+              </p>
+              <div class="flex space-x-4">
+                <button @click="navigateTo('/auth/register')" class="btn-primary">
+                  Cadastre-se
+                </button>
+                <button @click="navigateTo('/games/scratch-card')" class="btn-outline">
+                  Ver Jogos
                 </button>
               </div>
             </div>
-          </ElCarouselItem>
-        </ElCarousel>
-      </section>
-      
-      <!-- Seção Promocional Ativa -->
-      <section class="mb-12 card p-4 md:p-8">
-        <div class="flex flex-col md:flex-row items-center">
-          <div class="md:w-1/2 mb-6 md:mb-0 md:pr-8">
-            <h2 class="text-2xl font-bold text-white mb-4">Promoção Especial</h2>
-            <p class="text-gray-300 mb-6">
-              Aproveite nossa promoção especial! Faça um depósito hoje e ganhe 50% de bônus para jogar em nossas raspadinhas e números da sorte.
+            <div class="md:w-1/2">
+              <div class="bg-gray-800 p-6 rounded-lg border border-primary-500">
+                <h3 class="text-xl font-bold text-white mb-4">Bônus de 50%</h3>
+                <ul class="space-y-3 text-gray-300">
+                  <li class="flex items-start">
+                    <span class="text-primary-500 mr-2">✓</span>
+                    <span>Válido para novos usuários</span>
+                  </li>
+                  <li class="flex items-start">
+                    <span class="text-primary-500 mr-2">✓</span>
+                    <span>Depósito mínimo de R$ 20,00</span>
+                  </li>
+                  <li class="flex items-start">
+                    <span class="text-primary-500 mr-2">✓</span>
+                    <span>Bônus creditado instantaneamente</span>
+                  </li>
+                  <li class="flex items-start">
+                    <span class="text-primary-500 mr-2">✓</span>
+                    <span>Válido por 7 dias após o cadastro</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+        
+        <!-- Últimos Resultados e Ganhadores -->
+        <section class="mb-12">
+          <h2 class="text-2xl font-bold text-white mb-6">Últimos Ganhadores</h2>
+          
+          <div v-if="isLoading" class="flex justify-center py-12">
+            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500"></div>
+          </div>
+          
+          <div v-else-if="latestWinners.length === 0" class="card p-4 md:p-8 text-center">
+            <p class="text-gray-400">
+              Ainda não temos ganhadores para exibir. Seja o primeiro!
             </p>
-            <div class="flex space-x-4">
-              <button @click="navigateTo('/auth/register')" class="btn-primary">
-                Cadastre-se
-              </button>
-              <button @click="navigateTo('/games/scratch-card')" class="btn-outline">
-                Ver Jogos
-              </button>
+          </div>
+          
+          <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+            <div 
+              v-for="winner in latestWinners" 
+              :key="winner.id"
+              class="card p-4 md:p-6 hover:shadow-lg transition-shadow"
+            >
+              <div class="flex items-center mb-4">
+                <div class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-primary-700 flex items-center justify-center text-white text-lg md:text-xl font-bold">
+                  {{ winner.name.charAt(0) }}
+                </div>
+                <div class="ml-3 md:ml-4">
+                  <h3 class="font-bold text-white text-sm md:text-base">{{ winner.name }}</h3>
+                  <p class="text-xs md:text-sm text-gray-400">{{ winner.gameTitle }}</p>
+                </div>
+              </div>
+              <div class="mb-2">
+                <span class="text-xs md:text-sm text-gray-400">Prêmio</span>
+                <p class="text-lg md:text-xl font-bold text-primary-500">{{ formatCurrency(winner.prize) }}</p>
+              </div>
+              <p class="text-xs md:text-sm text-gray-400">
+                Ganhou em: {{ formatDate(winner.date) }}
+              </p>
             </div>
           </div>
-          <div class="md:w-1/2">
-            <div class="bg-gray-800 p-6 rounded-lg border border-primary-500">
-              <h3 class="text-xl font-bold text-white mb-4">Bônus de 50%</h3>
-              <ul class="space-y-3 text-gray-300">
-                <li class="flex items-start">
-                  <span class="text-primary-500 mr-2">✓</span>
-                  <span>Válido para novos usuários</span>
-                </li>
-                <li class="flex items-start">
-                  <span class="text-primary-500 mr-2">✓</span>
-                  <span>Depósito mínimo de R$ 20,00</span>
-                </li>
-                <li class="flex items-start">
-                  <span class="text-primary-500 mr-2">✓</span>
-                  <span>Bônus creditado instantaneamente</span>
-                </li>
-                <li class="flex items-start">
-                  <span class="text-primary-500 mr-2">✓</span>
-                  <span>Válido por 7 dias após o cadastro</span>
-                </li>
-              </ul>
+        </section>
+        
+        <!-- Vídeos Integrados -->
+        <section class="mb-12">
+          <h2 class="text-2xl font-bold text-white mb-6">Veja Quem Está Ganhando</h2>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+            <div 
+              v-for="video in youtubeShorts" 
+              :key="video.id"
+              class="card overflow-hidden"
+            >
+              <div class="aspect-video">
+                <iframe 
+                  class="w-full h-full"
+                  :src="video.embedUrl" 
+                  title="YouTube video player" 
+                  frameborder="0" 
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                  allowfullscreen
+                ></iframe>
+              </div>
+              <div class="p-3 md:p-4">
+                <h3 class="font-bold text-white text-sm md:text-base">{{ video.title }}</h3>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
-      
-      <!-- Últimos Resultados e Ganhadores -->
-      <section class="mb-12">
-        <h2 class="text-2xl font-bold text-white mb-6">Últimos Ganhadores</h2>
+        </section>
         
-        <div v-if="isLoading" class="flex justify-center py-12">
-          <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500"></div>
-        </div>
-        
-        <div v-else-if="latestWinners.length === 0" class="card p-4 md:p-8 text-center">
-          <p class="text-gray-400">
-            Ainda não temos ganhadores para exibir. Seja o primeiro!
+        <!-- CTA Final -->
+        <section class="card p-4 md:p-8 text-center mb-12">
+          <h2 class="text-2xl md:text-3xl font-bold text-white mb-4">Pronto para Ganhar?</h2>
+          <p class="text-gray-300 mb-6 max-w-2xl mx-auto text-sm md:text-base">
+            Junte-se a milhares de jogadores que já estão se divertindo e ganhando prêmios em nossa plataforma.
           </p>
-        </div>
-        
-        <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-          <div 
-            v-for="winner in latestWinners" 
-            :key="winner.id"
-            class="card p-4 md:p-6 hover:shadow-lg transition-shadow"
-          >
-            <div class="flex items-center mb-4">
-              <div class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-primary-700 flex items-center justify-center text-white text-lg md:text-xl font-bold">
-                {{ winner.name.charAt(0) }}
-              </div>
-              <div class="ml-3 md:ml-4">
-                <h3 class="font-bold text-white text-sm md:text-base">{{ winner.name }}</h3>
-                <p class="text-xs md:text-sm text-gray-400">{{ winner.gameTitle }}</p>
-              </div>
-            </div>
-            <div class="mb-2">
-              <span class="text-xs md:text-sm text-gray-400">Prêmio</span>
-              <p class="text-lg md:text-xl font-bold text-primary-500">{{ formatCurrency(winner.prize) }}</p>
-            </div>
-            <p class="text-xs md:text-sm text-gray-400">
-              Ganhou em: {{ formatDate(winner.date) }}
-            </p>
+          <div class="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4">
+            <button 
+              v-if="!authStore.isAuthenticated" 
+              @click="navigateTo('/auth/register')" 
+              class="btn-primary"
+            >
+              Criar Conta
+            </button>
+            <button @click="navigateTo('/games/scratch-card')" class="btn-primary">
+              Jogar Agora
+            </button>
           </div>
-        </div>
-      </section>
-      
-      <!-- Vídeos Integrados -->
-      <section class="mb-12">
-        <h2 class="text-2xl font-bold text-white mb-6">Veja Quem Está Ganhando</h2>
-        
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-          <div 
-            v-for="video in youtubeShorts" 
-            :key="video.id"
-            class="card overflow-hidden"
-          >
-            <div class="aspect-video">
-              <iframe 
-                class="w-full h-full"
-                :src="video.embedUrl" 
-                title="YouTube video player" 
-                frameborder="0" 
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                allowfullscreen
-              ></iframe>
-            </div>
-            <div class="p-3 md:p-4">
-              <h3 class="font-bold text-white text-sm md:text-base">{{ video.title }}</h3>
-            </div>
-          </div>
-        </div>
-      </section>
-      
-      <!-- CTA Final -->
-      <section class="card p-4 md:p-8 text-center mb-12">
-        <h2 class="text-2xl md:text-3xl font-bold text-white mb-4">Pronto para Ganhar?</h2>
-        <p class="text-gray-300 mb-6 max-w-2xl mx-auto text-sm md:text-base">
-          Junte-se a milhares de jogadores que já estão se divertindo e ganhando prêmios em nossa plataforma.
-        </p>
-        <div class="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4">
-          <button 
-            v-if="!authStore.isAuthenticated" 
-            @click="navigateTo('/auth/register')" 
-            class="btn-primary"
-          >
-            Criar Conta
-          </button>
-          <button @click="navigateTo('/games/scratch-card')" class="btn-primary">
-            Jogar Agora
-          </button>
-        </div>
-      </section>
+        </section>
+      </div>
     </div>
   </DefaultLayout>
 </template>
@@ -379,13 +368,26 @@ export default {
 :deep(.el-carousel__item) {
   border-radius: 0.5rem;
   overflow: hidden;
-  cursor: grab;
+  cursor: pointer;
   user-select: none;
   -webkit-user-drag: none;
 }
 
 :deep(.el-carousel__item:active) {
-  cursor: grabbing;
+  cursor: pointer;
+}
+
+:deep(.el-carousel__item > div) {
+  transition: transform 0.3s ease;
+  background-size: contain !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  height: 100%;
+  width: 100%;
+}
+
+:deep(.el-carousel__item > div:hover) {
+  transform: scale(1.02);
 }
 
 @media (max-width: 768px) {
@@ -394,10 +396,70 @@ export default {
     height: 30px;
     font-size: 12px;
   }
+  
+  :deep(.el-carousel__container) {
+    aspect-ratio: 13/5;
+  }
+  
+  :deep(.el-carousel__item > div) {
+    background-size: contain !important;
+  }
 }
 
-/* Ajuste para o gradiente de fundo nos slides */
-:deep(.el-carousel__item .bg-gradient-to-t) {
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.4) 30%, rgba(0, 0, 0, 0) 60%);
+/* Proporção de aspecto 13:5 para os banners */
+.banner-carousel {
+  width: 100%;
+  margin-top: -1px; /* Para compensar qualquer gap residual */
+}
+
+.banner-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.banner-content {
+  background-size: contain !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+}
+
+:deep(.el-carousel__container) {
+  aspect-ratio: 13/5;
+  height: auto !important;
+  background-color: #0a0e17;
+}
+
+:deep(.el-carousel__item) {
+  height: 100% !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+:deep(.el-carousel__indicators) {
+  margin: 0;
+  padding: 0;
+}
+
+:deep(.el-carousel__indicators--outside) {
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .banner-carousel {
+    margin: 0;
+    padding: 0;
+  }
+  
+  :deep(.el-carousel__container) {
+    margin: 0;
+    padding: 0;
+  }
+  
+  :deep(.el-carousel__indicators--outside) {
+    margin-top: 4px;
+    transform: translateY(-4px);
+  }
 }
 </style> 
