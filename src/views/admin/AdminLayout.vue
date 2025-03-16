@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { useAuthStore } from '../../stores/auth';
+import { useAdminStore } from '../../stores/admin';
 
 const router = useRouter();
 const route = useRoute();
-const authStore = useAuthStore();
+const adminStore = useAdminStore();
 
 const isSidebarOpen = ref(true);
+const isMobileView = ref(false);
 
-// Verificar se o usuário é administrador
-const isAdmin = computed(() => authStore.isAdmin);
+// Verificar se o usuário é super admin
+const isSuperAdmin = computed(() => adminStore.isSuperAdmin);
 
 // Verificar a rota atual para destacar o item do menu
 const currentRoute = computed(() => route.name);
@@ -22,13 +23,42 @@ const menuItems = [
   { name: 'Parceiros', route: 'admin-partners', icon: 'building' },
   { name: 'Raspadinhas', route: 'admin-scratch-cards', icon: 'ticket' },
   { name: 'Sorteios', route: 'admin-lucky-draws', icon: 'gift' },
-  { name: 'Relatórios', route: 'admin-reports', icon: 'chart-bar' }
+  { name: 'Relatórios', route: 'admin-reports', icon: 'chart-bar' },
+  { 
+    name: 'Desenvolvedor', 
+    route: 'admin-developer', 
+    icon: 'code', 
+    superAdminOnly: true 
+  }
 ];
+
+// Verificar o tamanho da tela e ajustar o sidebar
+function checkScreenSize() {
+  isMobileView.value = window.innerWidth < 768;
+  if (isMobileView.value) {
+    isSidebarOpen.value = false;
+  } else {
+    isSidebarOpen.value = true;
+  }
+}
+
+// Inicializar verificação de tamanho da tela
+onMounted(() => {
+  checkScreenSize();
+  window.addEventListener('resize', checkScreenSize);
+});
 
 // Alternar a visibilidade do menu lateral
 function toggleSidebar() {
   isSidebarOpen.value = !isSidebarOpen.value;
 }
+
+// Fechar o sidebar após navegação em dispositivos móveis
+watch(route, () => {
+  if (isMobileView.value) {
+    isSidebarOpen.value = false;
+  }
+});
 
 // Navegar para uma rota
 function navigateTo(routeName: string) {
@@ -42,17 +72,27 @@ function goToMainSite() {
 
 // Fazer logout
 function handleLogout() {
-  authStore.logout();
+  adminStore.adminLogout();
   router.push('/');
 }
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-900 flex">
+  <div class="min-h-screen bg-gray-900 flex flex-col md:flex-row">
+    <!-- Overlay para dispositivos móveis -->
+    <div 
+      v-if="isMobileView && isSidebarOpen" 
+      class="fixed inset-0 bg-black bg-opacity-50 z-20"
+      @click="toggleSidebar"
+    ></div>
+    
     <!-- Sidebar -->
     <aside 
-      class="bg-gray-800 text-white transition-all duration-300 overflow-hidden"
-      :class="isSidebarOpen ? 'w-64' : 'w-16'"
+      class="bg-gray-800 text-white transition-all duration-300 overflow-hidden z-30"
+      :class="[
+        isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
+        isMobileView ? 'fixed inset-y-0 left-0 w-64' : isSidebarOpen ? 'w-64' : 'w-16'
+      ]"
     >
       <div class="p-4 flex items-center justify-between">
         <h1 v-if="isSidebarOpen" class="text-xl font-bold text-primary-500">Admin</h1>
@@ -67,6 +107,7 @@ function handleLogout() {
         <ul class="space-y-2 px-2">
           <li v-for="item in menuItems" :key="item.route">
             <button
+              v-if="!item.superAdminOnly || isSuperAdmin"
               @click="navigateTo(item.route)"
               class="w-full flex items-center p-2 rounded-md transition-colors"
               :class="currentRoute === item.route ? 'bg-primary-700 text-white' : 'text-gray-300 hover:bg-gray-700'"
@@ -91,6 +132,9 @@ function handleLogout() {
                 </svg>
                 <svg v-else-if="item.icon === 'chart-bar'" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <svg v-else-if="item.icon === 'code'" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
                 </svg>
               </span>
               <span v-if="isSidebarOpen" class="ml-3">{{ item.name }}</span>
@@ -130,12 +174,34 @@ function handleLogout() {
     
     <!-- Conteúdo principal -->
     <main class="flex-1 overflow-x-hidden overflow-y-auto">
-      <div class="container mx-auto px-6 py-8">
+      <!-- Cabeçalho móvel -->
+      <div class="md:hidden bg-gray-800 p-4 flex items-center justify-between">
+        <h1 class="text-xl font-bold text-primary-500">Admin</h1>
+        <button @click="toggleSidebar" class="p-1 rounded-md text-white hover:bg-gray-700">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      </div>
+      
+      <div class="container mx-auto px-4 py-6 md:px-6 md:py-8">
         <RouterView />
       </div>
     </main>
   </div>
 </template>
+
+<style scoped>
+@media (max-width: 767px) {
+  .translate-x-0 {
+    transform: translateX(0);
+  }
+  
+  .-translate-x-full {
+    transform: translateX(-100%);
+  }
+}
+</style>
 
 <script lang="ts">
 export default {

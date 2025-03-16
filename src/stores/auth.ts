@@ -1,9 +1,13 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import axios from 'axios';
+import { useRouter } from 'vue-router';
 
-// Configuração do axios para usar a API local
-axios.defaults.baseURL = 'http://localhost:3000/api';
+// Criar uma instância separada do Axios para usuários jogadores
+const userAxios = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
+  withCredentials: true // Habilitar cookies para o token de atualização
+});
 
 interface User {
   id: string;
@@ -11,8 +15,9 @@ interface User {
   email: string;
   phone: string;
   cpf: string;
-  role: 'user' | 'admin' | 'moderator';
+  role: 'user' | 'vip';
   balance: number;
+  status: 'active' | 'inactive' | 'suspended';
   partnerId?: string;
 }
 
@@ -30,6 +35,7 @@ interface RegisterData {
 }
 
 export const useAuthStore = defineStore('auth', () => {
+  const router = useRouter();
   const user = ref<User | null>(null);
   const token = ref<string | null>(null);
   const isLoading = ref(false);
@@ -37,8 +43,63 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Estado computado
   const isAuthenticated = computed(() => !!token.value);
-  const isAdmin = computed(() => user.value?.role === 'admin');
-  const isModerator = computed(() => user.value?.role === 'moderator' || user.value?.role === 'admin');
+  const isVip = computed(() => user.value?.role === 'vip');
+
+  // Configurar interceptor para adicionar token de autorização
+  userAxios.interceptors.request.use(
+    (config) => {
+      if (token.value) {
+        config.headers.Authorization = `Bearer ${token.value}`;
+      }
+      return config;
+    },
+    (error) => Promise.reject(error)
+  );
+
+  // Interceptor para lidar com erros de autenticação
+  userAxios.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+      const originalRequest = error.config;
+      
+      // Se o erro for 401 (não autorizado) e não for uma tentativa de atualizar o token
+      if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url.includes('refresh-token')) {
+        originalRequest._retry = true;
+        
+        try {
+          // Tentar atualizar o token
+          const response = await userAxios.post('/auth/refresh-token');
+          const newToken = response.data.token;
+          
+          if (newToken) {
+            // Atualizar o token no store e localStorage
+            token.value = newToken;
+            localStorage.setItem('token', newToken);
+            
+            // Reenviar a requisição original com o novo token
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            return userAxios(originalRequest);
+          }
+        } catch (refreshError) {
+          // Se falhar ao atualizar o token, fazer logout
+          logout();
+          
+          // Redirecionar para a página de login
+          router.push({ 
+            name: 'login', 
+            query: { 
+              redirect: router.currentRoute.value.fullPath,
+              reason: 'session_expired'
+            } 
+          });
+          
+          return Promise.reject(refreshError);
+        }
+      }
+      
+      return Promise.reject(error);
+    }
+  );
 
   // Ações
   async function initialize() {
@@ -54,15 +115,20 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null;
     
     try {
-      const response = await axios.post('/auth/login', credentials);
+      const response = await userAxios.post('/auth/login', credentials);
       
-      token.value = response.data.token;
-      user.value = response.data.user;
-      
-      // Salva o token no localStorage
-      localStorage.setItem('token', response.data.token);
-      
-      return true;
+      if (response.data.success) {
+        token.value = response.data.token;
+        user.value = response.data.user;
+        
+        // Salva o token no localStorage
+        localStorage.setItem('token', response.data.token);
+        
+        return true;
+      } else {
+        error.value = response.data.message || 'Erro ao fazer login';
+        return false;
+      }
     } catch (err) {
       if (axios.isAxiosError(err) && err.response) {
         error.value = err.response.data.message || 'Erro ao fazer login';
@@ -80,8 +146,14 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null;
     
     try {
-      const response = await axios.post('/auth/register', data);
-      return true;
+      const response = await userAxios.post('/auth/register', data);
+      
+      if (response.data.success) {
+        return true;
+      } else {
+        error.value = response.data.message || 'Erro ao registrar';
+        return false;
+      }
     } catch (err) {
       if (axios.isAxiosError(err) && err.response) {
         error.value = err.response.data.message || 'Erro ao registrar';
@@ -100,16 +172,14 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading.value = true;
     
     try {
-      // Configurar o cabeçalho de autorização
-      const config = {
-        headers: { Authorization: `Bearer ${token.value}` }
-      };
+      const response = await userAxios.get('/auth/profile');
       
-      const response = await axios.get('/auth/profile', config);
-      user.value = response.data.user;
+      if (response.data.success) {
+        user.value = response.data.user;
+      }
     } catch (err) {
       if (axios.isAxiosError(err) && err.response && err.response.status === 401) {
-        // Token inválido ou expirado
+        // Token inválido ou expirado e não foi possível atualizar
         logout();
       }
     } finally {
@@ -117,7 +187,16 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  function logout() {
+  async function logout() {
+    if (token.value) {
+      try {
+        // Chamar a API para invalidar o token no servidor
+        await userAxios.get('/auth/logout');
+      } catch (err) {
+        // Ignorar erros ao fazer logout
+      }
+    }
+    
     user.value = null;
     token.value = null;
     localStorage.removeItem('token');
@@ -129,8 +208,7 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading,
     error,
     isAuthenticated,
-    isAdmin,
-    isModerator,
+    isVip,
     initialize,
     login,
     register,

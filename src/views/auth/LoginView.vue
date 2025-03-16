@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '../../stores/auth';
 import { ElMessage } from 'element-plus';
@@ -20,7 +20,17 @@ const form = reactive({
 
 const errors = reactive({
   email: '',
-  password: ''
+  password: '',
+  general: ''
+});
+
+// Observar mudanças no erro do store
+watch(() => authStore.error, (newError) => {
+  if (newError) {
+    errors.general = newError;
+  } else {
+    errors.general = '';
+  }
 });
 
 function validateForm() {
@@ -52,29 +62,33 @@ async function handleSubmit() {
   if (!validateForm()) return;
   
   isLoading.value = true;
+  errors.general = '';
   
   try {
-    // Passando as credenciais como um objeto único
-    await authStore.login({
+    const success = await authStore.login({
       email: form.email,
       password: form.password
     });
     
-    // Se o login for bem-sucedido e rememberMe estiver marcado, podemos salvar no localStorage
-    if (form.rememberMe) {
-      localStorage.setItem('rememberEmail', form.email);
+    if (success) {
+      // Se o login for bem-sucedido e rememberMe estiver marcado, podemos salvar no localStorage
+      if (form.rememberMe) {
+        localStorage.setItem('rememberEmail', form.email);
+      } else {
+        localStorage.removeItem('rememberEmail');
+      }
+      
+      ElMessage.success('Login realizado com sucesso!');
+      
+      // Redirecionar para a página solicitada ou para a página inicial
+      const redirectPath = route.query.redirect as string || '/';
+      router.push(redirectPath);
     } else {
-      localStorage.removeItem('rememberEmail');
+      // O erro já foi definido no store e será exibido pelo watcher
     }
-    
-    ElMessage.success('Login realizado com sucesso!');
-    
-    // Redirecionar para a página solicitada ou para a página inicial
-    const redirectPath = route.query.redirect as string || '/';
-    router.push(redirectPath);
   } catch (error) {
     console.error('Erro ao fazer login:', error);
-    ElMessage.error('Email ou senha incorretos. Tente novamente.');
+    errors.general = 'Ocorreu um erro ao tentar fazer login. Tente novamente.';
   } finally {
     isLoading.value = false;
   }
@@ -103,6 +117,11 @@ onMounted(() => {
     <div class="flex justify-center items-center min-h-[80vh] px-4 py-4 mb-16">
       <div class="card w-full max-w-md p-6">
         <h1 class="text-3xl font-bold text-white text-center mb-8">Entrar</h1>
+        
+        <!-- Mensagem de erro geral -->
+        <div v-if="errors.general" class="mb-4 p-3 bg-red-900/50 border border-red-500 rounded-lg text-red-200 text-sm">
+          {{ errors.general }}
+        </div>
         
         <form @submit.prevent="handleSubmit" class="space-y-6">
           <!-- Email -->

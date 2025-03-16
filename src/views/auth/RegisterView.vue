@@ -1,5 +1,5 @@
-<script setup lang="ts">
-import { ref, reactive } from 'vue';
+  <script setup lang="ts">
+import { ref, reactive, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/auth';
 import { ElMessage } from 'element-plus';
@@ -29,7 +29,17 @@ const errors = reactive({
   phone: '',
   password: '',
   passwordConfirm: '',
-  terms: ''
+  terms: '',
+  general: ''
+});
+
+// Observar mudanças no erro do store
+watch(() => authStore.error, (newError) => {
+  if (newError) {
+    errors.general = newError;
+  } else {
+    errors.general = '';
+  }
 });
 
 function validateForm() {
@@ -157,9 +167,10 @@ async function handleSubmit() {
   if (!validateForm()) return;
   
   isLoading.value = true;
+  errors.general = '';
   
   try {
-    await authStore.register({
+    const success = await authStore.register({
       name: form.fullName,
       cpf: form.cpf,
       email: form.email,
@@ -167,11 +178,15 @@ async function handleSubmit() {
       password: form.password
     });
     
-    ElMessage.success('Cadastro realizado com sucesso! Faça login para continuar.');
-    router.push('/auth/login');
+    if (success) {
+      ElMessage.success('Cadastro realizado com sucesso! Faça login para continuar.');
+      router.push('/auth/login');
+    } else {
+      // O erro já foi definido no store e será exibido pelo watcher
+    }
   } catch (error) {
     console.error('Erro ao fazer cadastro:', error);
-    ElMessage.error('Não foi possível completar o cadastro. Verifique os dados e tente novamente.');
+    errors.general = 'Ocorreu um erro ao tentar fazer o cadastro. Tente novamente.';
   } finally {
     isLoading.value = false;
   }
@@ -195,6 +210,11 @@ function navigateToLogin() {
     <div class="flex justify-center items-center py-4 px-4 mb-16">
       <div class="card w-full max-w-2xl p-6">
         <h1 class="text-3xl font-bold text-white text-center mb-8">Criar Conta</h1>
+        
+        <!-- Mensagem de erro geral -->
+        <div v-if="errors.general" class="mb-4 p-3 bg-red-900/50 border border-red-500 rounded-lg text-red-200 text-sm">
+          {{ errors.general }}
+        </div>
         
         <form @submit.prevent="handleSubmit" class="space-y-6">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">

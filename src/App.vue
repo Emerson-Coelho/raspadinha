@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { onMounted, computed } from 'vue';
 import { useAuthStore } from './stores/auth';
+import { useAdminStore } from './stores/admin';
 import { RouterView, useRoute } from 'vue-router';
 import AppHeader from './components/common/AppHeader.vue';
 import AppFooter from './components/common/AppFooter.vue';
 import MobileNavBar from './components/common/MobileNavBar.vue';
 
 const authStore = useAuthStore();
+const adminStore = useAdminStore();
 const route = useRoute();
 
 // Verificar se a rota atual é a de administração
@@ -21,6 +23,7 @@ const isAuthRoute = computed(() => {
 
 onMounted(async () => {
   await authStore.initialize();
+  await adminStore.initialize();
 });
 </script>
 

@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
+import { useAdminStore } from '../stores/admin';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -15,12 +16,14 @@ const router = createRouter({
         {
           path: 'login',
           name: 'login',
-          component: () => import('../views/auth/LoginView.vue')
+          component: () => import('../views/auth/LoginView.vue'),
+          meta: { isUserAuth: true }
         },
         {
           path: 'register',
           name: 'register',
-          component: () => import('../views/auth/RegisterView.vue')
+          component: () => import('../views/auth/RegisterView.vue'),
+          meta: { isUserAuth: true }
         }
       ]
     },
@@ -53,24 +56,30 @@ const router = createRouter({
       path: '/profile',
       name: 'profile',
       component: () => import('../views/profile/ProfileView.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresUserAuth: true }
     },
     {
       path: '/deposit',
       name: 'deposit',
       component: () => import('../views/payment/DepositView.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresUserAuth: true }
     },
     {
       path: '/withdraw',
       name: 'withdraw',
       component: () => import('../views/payment/WithdrawView.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresUserAuth: true }
+    },
+    {
+      path: '/admin/login',
+      name: 'admin-login',
+      component: () => import('../views/admin/AdminLoginView.vue'),
+      meta: { isAdminAuth: true }
     },
     {
       path: '/admin',
       component: () => import('../views/admin/AdminLayout.vue'),
-      meta: { requiresAuth: true, requiresAdmin: true },
+      meta: { requiresAdminAuth: true },
       children: [
         {
           path: '',
@@ -101,6 +110,12 @@ const router = createRouter({
           path: 'reports',
           name: 'admin-reports',
           component: () => import('../views/admin/ReportsView.vue')
+        },
+        {
+          path: 'developer',
+          name: 'admin-developer',
+          component: () => import('../views/admin/DeveloperView.vue'),
+          meta: { requiresSuperAdmin: true }
         }
       ]
     },
@@ -113,19 +128,77 @@ const router = createRouter({
 });
 
 // Proteção de rotas
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
+  const adminStore = useAdminStore();
   
-  // Verificar se a rota requer autenticação
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    next({ name: 'login', query: { redirect: to.fullPath } });
+  // Inicializar stores se necessário
+  if (!authStore.isAuthenticated) {
+    await authStore.initialize();
+  }
+  
+  if (!adminStore.isAdminAuthenticated) {
+    await adminStore.initialize();
+  }
+  
+  // Verificar se é uma rota de autenticação de usuário
+  if (to.meta.isUserAuth) {
+    // Se já estiver autenticado como usuário, redirecionar para a página inicial
+    if (authStore.isAuthenticated) {
+      next({ name: 'home' });
+      return;
+    }
+    // Caso contrário, permitir acesso à página de login/registro
+    next();
     return;
   }
   
-  // Verificar se a rota requer privilégios de administrador
-  if (to.meta.requiresAdmin && !authStore.isAdmin) {
-    next({ name: 'home' });
+  // Verificar se é uma rota de autenticação admin
+  if (to.meta.isAdminAuth) {
+    // Se já estiver autenticado como admin, redirecionar para o dashboard
+    if (adminStore.isAdminAuthenticated) {
+      next({ name: 'admin-dashboard' });
+      return;
+    }
+    // Caso contrário, permitir acesso à página de login admin
+    next();
     return;
+  }
+  
+  // Verificar se a rota requer autenticação de usuário
+  if (to.meta.requiresUserAuth && !authStore.isAuthenticated) {
+    next({ name: 'login', query: { redirect: to.fullPath, reason: 'not_authenticated' } });
+    return;
+  }
+  
+  // Verificar se a rota requer autenticação de administrador
+  if (to.meta.requiresAdminAuth) {
+    // Verificar se está autenticado como admin
+    if (!adminStore.isAdminAuthenticated) {
+      next({ name: 'admin-login', query: { redirect: to.fullPath, reason: 'not_authenticated' } });
+      return;
+    }
+    
+    // Verificar se o token é válido
+    try {
+      const isValid = await adminStore.verifyToken();
+      if (!isValid) {
+        next({ name: 'admin-login', query: { redirect: to.fullPath, reason: 'session_expired' } });
+        return;
+      }
+    } catch (err) {
+      next({ name: 'admin-login', query: { redirect: to.fullPath, reason: 'session_expired' } });
+      return;
+    }
+  }
+  
+  // Verificar se a rota requer privilégios de super admin
+  if (to.meta.requiresSuperAdmin) {
+    // Verificar se está autenticado como super admin
+    if (!adminStore.isSuperAdmin) {
+      next({ name: 'admin-dashboard', query: { error: 'access_denied' } });
+      return;
+    }
   }
   
   next();
