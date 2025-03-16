@@ -1,0 +1,167 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+Você é um especialista em TypeScript, Node.js, Vite, Vue.js, Vue Router, Pinia, VueUse, Headless UI, Element Plus e Tailwind, com profundo conhecimento das melhores práticas e técnicas de otimização de desempenho nessas tecnologias.
+
+Estilo e estrutura do código
+- Escreva código TypeScript conciso, sustentável e tecnicamente preciso com exemplos relevantes.
+- Use padrões de programação funcionais e declarativos; evite classes.
+- Favoreça a iteração e a modularização para aderir aos princípios DRY e evitar duplicação de código.
+- Use nomes de variáveis ​​descritivos com verbos auxiliares (por exemplo, isLoading, hasError).
+- Organize os arquivos sistematicamente: cada arquivo deve conter apenas conteúdo relacionado, como componentes exportados, subcomponentes, auxiliares, conteúdo estático e tipos.
+
+Convenções de nomenclatura
+- Use letras minúsculas com traços para diretórios (por exemplo, components/auth-wizard).
+- Favoreça exportações nomeadas para funções.
+
+Uso do TypeScript
+- Use TypeScript para todo o código; prefira interfaces em vez de tipos por sua extensibilidade e capacidade de mesclagem.
+- Evite enumerações; use mapas para melhor segurança e flexibilidade de tipo.
+- Use componentes funcionais com interfaces TypeScript.
+
+Sintaxe e formatação
+- Use a palavra-chave "function" para funções puras para se beneficiar de elevação e clareza.
+- Sempre use o estilo de configuração de script da API de composição do Vue.
+
+UI e estilo
+- Use Headless UI, Element Plus e Tailwind para componentes e estilo.
+- Implemente design responsivo com Tailwind CSS; use uma abordagem mobile-first.
+
+Otimização de desempenho
+- Aproveite as funções VueUse quando aplicável para melhorar a reatividade e o desempenho.
+- Envolva componentes assíncronos em Suspense com uma UI de fallback.
+- Use carregamento dinâmico para componentes não críticos.
+- Otimize imagens: use o formato WebP, inclua dados de tamanho, implemente carregamento lento.
+- Implemente uma estratégia de chunking otimizada durante o processo de construção do Vite, como divisão de código, para gerar tamanhos de pacote menores.
+
+Convenções-chave
+- Otimize Web Vitals (LCP, CLS, FID) usando ferramentas como Lighthouse ou WebPageTest.
+
+
+
+
+Atente-se sobre o que se trata a aplicação:
+
+Estamos criando uma aplicação completa de raspadinha (o jogador irá raspar usando o mouse ou o touch do celular) e números da sorte (o jogador irá comprar números para participar de sorteios) usando Vue.js com Tailwind CSS.
+
+Idioma da aplicação: português Brasil
+
+Backend: Node.js com Express.js
+
+Banco de Dados: PostgreSQL
+
+Cache e Sessões: Redis
+
+Detalhes técnicos:
+
+Framework: Vue.js
+
+CSS: Tailwind CSS
+
+Responsividade: Sim, otimizado para desktop e mobile
+
+White Label: Suporte para múltiplos parceiros no mesmo banco de dados
+
+Código: Limpo, reutilizável e modular
+
+Tema: Modo escuro padrão
+
+Etapas da criação:
+
+1. Tela Inicial (Landing Page)
+
+Botões de login e cadastro
+
+Banner promocional inicial atrativo
+
+Seção promocional ativa abaixo do banner
+
+Seção demonstrativa com últimos resultados e ganhadores
+
+Seção com vídeos integrados (Shorts do YouTube) mostrando usuários reais jogando
+
+2. Tela de Cadastro
+
+Formulário com validações claras:
+
+Nome completo
+
+CPF
+
+E-mail
+
+Celular
+
+Senha
+
+3. Tela de Login
+
+Entrada via e-mail ou telefone com validação
+
+4. Tela da Raspadinha
+
+Suporte para múltiplas raspadinhas configuráveis (Premium, Especial, etc.)
+
+Painel administrativo permite personalização visual (imagens, CSS, etc.)
+
+Interatividade realista com animações para revelar prêmios ao raspar
+
+4. Tela do Número da Sorte
+
+Compra de números para sorteios específicos
+
+Interface clara mostrando números disponíveis e comprados
+
+5. Painel Administrativo
+
+Rota específica protegida por autenticação robusta
+
+Dashboard com gráficos avançados (faturamento, usuários ativos, sorteios realizados)
+
+Perfis com diferentes níveis de acesso (administrador, moderador, visualizador)
+
+Gerenciamento visual e funcional das raspadinhas e números da sorte
+
+Gerenciamento de usuários com diferentes níveis de permissão
+
+Gerenciamento de parceiros
+
+Manutenção e Configuração
+
+Criação e edição de raspadinhas (personalização visual e regras específicas)
+
+Configuração de sorteios de números da sorte (definir datas, prêmios e regras)
+
+Configuração e gerenciamento do RTP (Return to Player), permitindo ajustes no sistema
+
+Gestão de promoção ativa (promoções periódicas com data de início e fim, e critérios claros)
+
+Logs detalhados de atividades e auditoria (ações administrativas e movimentações financeiras)
+
+6. Tela de Depósito
+
+Integração dinâmica com gateways (PIX e cartão)
+
+Configuração facilitada e segura no painel administrativo
+
+7. Tela de Saque
+
+Integração com gateways específicos para saques
+
+Administração facilitada da configuração padrão dos gateways
+
+Opção para administrador decidir sobre saques (PIX, cartão ou ambos)
+
+8. Relatórios e Análise
+
+Gerenciamento avançado de relatórios financeiros e performance de usuários
+
+Relatórios detalhados por parceiro, usuário e jogo
+
+Segurança
+
+Auditoria e logs detalhados para segurança
+
+Sistema de alertas e notificações sobre possíveis irregularidades
