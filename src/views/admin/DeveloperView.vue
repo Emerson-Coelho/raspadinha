@@ -6,6 +6,22 @@ import { useAdminStore } from '../../stores/admin';
 
 const adminStore = useAdminStore();
 
+// Criar uma instância do axios com a baseURL correta
+const api = axios.create({
+  baseURL: 'http://localhost:3000/api'
+});
+
+// Configurar o interceptor para adicionar o token de autorização
+api.interceptors.request.use(
+  (config) => {
+    if (adminStore.adminToken) {
+      config.headers.Authorization = `Bearer ${adminStore.adminToken}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 // Estado
 const isLoading = ref(false);
 const isCreatingTable = ref(false);
@@ -36,9 +52,7 @@ async function checkTableStatus() {
   output.value.push('Verificando status da tabela de usuários...');
   
   try {
-    const response = await axios.get('/api/admin/developer/table-status', {
-      headers: { Authorization: `Bearer ${adminStore.adminToken}` }
-    });
+    const response = await api.get('/admin/developer/table-status');
     
     if (response.data.success) {
       tableStatus.value.exists = response.data.exists;
@@ -74,9 +88,7 @@ async function createUsersTable() {
     isCreatingTable.value = true;
     output.value.push('Criando tabela de usuários...');
     
-    const response = await axios.post('/api/admin/developer/create-table', {}, {
-      headers: { Authorization: `Bearer ${adminStore.adminToken}` }
-    });
+    const response = await api.post('/admin/developer/create-table');
     
     if (response.data.success) {
       output.value.push('Tabela de usuários criada com sucesso!');
@@ -120,12 +132,10 @@ async function createTestUsers() {
     isCreatingUsers.value = true;
     output.value.push(`Criando ${userSettings.count} usuários de teste...`);
     
-    const response = await axios.post('/api/admin/developer/create-users', {
+    const response = await api.post('/admin/developer/create-users', {
       count: userSettings.count,
       batchSize: userSettings.batchSize,
       continueFromLast: userSettings.continueFromLast
-    }, {
-      headers: { Authorization: `Bearer ${adminStore.adminToken}` }
     });
     
     if (response.data.success) {
@@ -239,7 +249,6 @@ onMounted(() => {
       <el-button 
         type="primary" 
         :loading="isCreatingUsers" 
-        :disabled="!tableStatus.exists" 
         @click="createTestUsers"
       >
         Criar Usuários de Teste
