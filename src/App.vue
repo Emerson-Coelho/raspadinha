@@ -14,6 +14,11 @@ const isAdminRoute = computed(() => {
   return route.path.startsWith('/admin');
 });
 
+// Verificar se é uma rota de autenticação (login/registro)
+const isAuthRoute = computed(() => {
+  return route.path.startsWith('/auth/');
+});
+
 onMounted(async () => {
   await authStore.initialize();
 });
@@ -24,7 +29,7 @@ onMounted(async () => {
     <!-- Layout padrão para todas as páginas exceto admin -->
     <template v-if="!isAdminRoute">
       <AppHeader />
-      <main class="flex-grow pt-16">
+      <main class="flex-grow pt-16" :class="{ 'mb-[60px] md:mb-0': !isAuthRoute }">
         <RouterView />
       </main>
       <AppFooter />
