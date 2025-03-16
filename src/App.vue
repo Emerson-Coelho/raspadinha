@@ -24,7 +24,7 @@ onMounted(async () => {
     <!-- Layout padrão para todas as páginas exceto admin -->
     <template v-if="!isAdminRoute">
       <AppHeader />
-      <main class="flex-grow pt-16 pb-16 md:pb-0">
+      <main class="flex-grow pt-16">
         <RouterView />
       </main>
       <AppFooter />

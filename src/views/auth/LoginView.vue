@@ -99,9 +99,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <DefaultLayout :showHeader="false" :showFooter="false">
-    <div class="flex justify-center items-center min-h-[80vh] px-4 pt-16 md:pt-0">
-      <div class="card w-full max-w-md p-8">
+  <DefaultLayout :showHeader="false">
+    <div class="flex justify-center items-center min-h-[80vh] px-4 py-4 mb-16">
+      <div class="card w-full max-w-md p-6">
         <h1 class="text-3xl font-bold text-white text-center mb-8">Entrar</h1>
         
         <form @submit.prevent="handleSubmit" class="space-y-6">

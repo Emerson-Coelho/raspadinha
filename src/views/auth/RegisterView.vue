@@ -191,9 +191,9 @@ function navigateToLogin() {
 </script>
 
 <template>
-  <DefaultLayout :showHeader="false" :showFooter="false">
-    <div class="flex justify-center items-center py-12 px-4 pt-16 md:pt-12">
-      <div class="card w-full max-w-2xl p-8">
+  <DefaultLayout :showHeader="false">
+    <div class="flex justify-center items-center py-4 px-4 mb-16">
+      <div class="card w-full max-w-2xl p-6">
         <h1 class="text-3xl font-bold text-white text-center mb-8">Criar Conta</h1>
         
         <form @submit.prevent="handleSubmit" class="space-y-6">
