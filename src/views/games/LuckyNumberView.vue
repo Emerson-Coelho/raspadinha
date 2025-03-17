@@ -19,7 +19,10 @@ const showHistory = ref(false);
 
 // Estado computado
 const isAuthenticated = computed(() => authStore.isAuthenticated);
-const userBalance = computed(() => authStore.user?.balance || 0);
+const userBalance = computed(() => {
+  const balance = authStore.userBalance;
+  return typeof balance === 'number' ? balance : 0;
+});
 const currentDraw = computed(() => luckyNumberStore.currentDraw);
 
 // Números do usuário para o sorteio atual

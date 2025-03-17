@@ -47,6 +47,7 @@ export const useAuthStore = defineStore('auth', () => {
   // Estado computado
   const isAuthenticated = computed(() => !!token.value);
   const isVip = computed(() => user.value?.role === 'vip');
+  const userBalance = computed(() => user.value?.balance || 0);
 
   // Configurar interceptor para adicionar token de autorização
   userAxios.interceptors.request.use(
@@ -264,6 +265,7 @@ export const useAuthStore = defineStore('auth', () => {
     error,
     isAuthenticated,
     isVip,
+    userBalance,
     initialize,
     login,
     register,
