@@ -35,6 +35,9 @@ import scratchCardRoutes from './routes/scratch-card.js';
 import luckyNumberRoutes from './routes/lucky-number.js';
 import paymentGatewayRoutes from './routes/paymentGatewayRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
+import transactionRoutes from './routes/transactionRoutes.js';
+import webhookRoutes from './routes/webhookRoutes.js';
+import systemLogRoutes from './routes/systemLogRoutes.js';
 
 // Função principal para iniciar o servidor
 async function startServer() {
@@ -64,6 +67,14 @@ async function startServer() {
 
   // Sincronizar modelos com o banco de dados
   try {
+    // Importar todos os modelos para garantir que sejam registrados
+    import('./models/User.js');
+    import('./models/PaymentGateway.js');
+    import('./models/Transaction.js');
+    import('./models/Admin.js');
+    import('./models/SystemLog.js');
+    
+    // Sincronizar modelos (apenas alterações, não forçar recriação)
     await sequelize.sync({ alter: true });
     console.log('Modelos sincronizados com o banco de dados');
     
@@ -85,6 +96,9 @@ async function startServer() {
   app.use('/api/lucky-draws', luckyNumberRoutes);
   app.use('/api/admin/payment-gateways', paymentGatewayRoutes);
   app.use('/api/payment-gateways', paymentRoutes);
+  app.use('/api/transactions', transactionRoutes);
+  app.use('/api/webhooks', webhookRoutes);
+  app.use('/api/admin/logs', systemLogRoutes);
 
   // Middleware de tratamento de erros
   app.use(errorHandler);

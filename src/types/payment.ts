@@ -31,9 +31,13 @@ export interface PaymentGateway {
   description: string;
   logo: string;
   isActive: boolean;
+  apiEndpoint: string;
   apiKeys: GatewayApiKeys;
   usageConfig: GatewayUsageConfig;
   paymentMethods: GatewayPaymentMethods;
+  // Propriedades legadas para compatibilidade
+  allowPix?: boolean;
+  allowCard?: boolean;
 }
 
 /**
@@ -67,4 +71,19 @@ export interface PaymentTransaction {
   gatewayReference?: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+/**
+ * Interface para o formulário de saque
+ */
+export interface WithdrawForm {
+  amount: number;
+  customAmount: string;
+  pixKey: string;
+  pixKeyType: string;
+  cardNumber: string;
+  cardName: string;
+  cardBank: string;
+  gateway: string;
+  balance: string;
 } 

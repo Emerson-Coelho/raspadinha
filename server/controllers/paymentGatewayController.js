@@ -1,6 +1,7 @@
 import PaymentGateway from '../models/PaymentGateway.js';
 import asyncHandler from '../middleware/async.js';
 import ErrorResponse from '../utils/errorResponse.js';
+import Admin from '../models/Admin.js';
 
 /**
  * @desc    Obter todos os gateways de pagamento
@@ -48,10 +49,20 @@ export const updatePaymentGateway = asyncHandler(async (req, res, next) => {
   }
   
   // Extrair dados do corpo da requisição
-  const { apiKeys, usageConfig, isActive, paymentMethods } = req.body;
+  const { apiKeys, usageConfig, isActive, paymentMethods, apiEndpoint } = req.body;
   
   // Preparar dados para atualização
   const updateData = {};
+  
+  // Verificar se o usuário é super_admin para atualizar o endpoint da API
+  if (apiEndpoint !== undefined) {
+    // Verificar se o usuário é super_admin
+    if (req.admin.role === 'super_admin') {
+      updateData.apiEndpoint = apiEndpoint;
+    } else {
+      return next(new ErrorResponse('Apenas super administradores podem alterar o endpoint da API', 403));
+    }
+  }
   
   // Atualizar chaves de API se fornecidas
   if (apiKeys) {
@@ -117,6 +128,7 @@ export const initializePaymentGateways = asyncHandler(async (req, res, next) => 
       description: 'Processador de pagamentos para depósitos e saques via PIX e cartão.',
       logo: '/images/gateways/unifypay.png',
       isActive: false,
+      apiEndpoint: 'https://api.unifypay.co',
       publicKey: '',
       secretKey: '',
       forDeposit: true,

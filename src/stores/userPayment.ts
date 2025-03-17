@@ -138,12 +138,20 @@ export const useUserPaymentStore = defineStore('userPayment', () => {
     }
     
     // Verificar se o método de pagamento é permitido
-    if (paymentMethod === 'pix' && !selectedGateway.value.paymentMethods.allowPix) {
+    const isPixAllowed = selectedGateway.value.paymentMethods?.allowPix ?? 
+                         selectedGateway.value.allowPix ?? 
+                         true;
+    
+    const isCardAllowed = selectedGateway.value.paymentMethods?.allowCard ?? 
+                          selectedGateway.value.allowCard ?? 
+                          true;
+    
+    if (paymentMethod === 'pix' && !isPixAllowed) {
       error.value = 'Este gateway não permite pagamentos via PIX.';
       return false;
     }
     
-    if (paymentMethod === 'card' && !selectedGateway.value.paymentMethods.allowCard) {
+    if (paymentMethod === 'card' && !isCardAllowed) {
       error.value = 'Este gateway não permite pagamentos via cartão.';
       return false;
     }
@@ -152,36 +160,62 @@ export const useUserPaymentStore = defineStore('userPayment', () => {
     error.value = null;
     
     try {
-      // Simulação de processamento de pagamento
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Obter token válido
+      const token = await authStore.getValidToken();
       
-      if (paymentMethod === 'pix') {
-        // Simulação de geração de QR Code e código PIX
-        qrCodeUrl.value = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=00020126580014BR.GOV.BCB.PIX0136a629532e-7693-4846-b028-f142a1dd04b5520400005303986540' + amount + '5802BR5913Raspadinha SA6008Sao Paulo62070503***63041D14';
-        pixCode.value = '00020126580014BR.GOV.BCB.PIX0136a629532e-7693-4846-b028-f142a1dd04b5520400005303986540' + amount + '5802BR5913Raspadinha SA6008Sao Paulo62070503***63041D14';
-        
-        showSuccessMessage.value = true;
-      } else {
-        // Simulação de processamento de cartão
-        // Na implementação real, você chamaria a API do gateway de pagamento
-        
-        // Atualizar saldo do usuário (simulação)
-        if (authStore.user) {
-          authStore.user.balance += amount;
-        }
-        
-        ElMessage.success('Depósito realizado com sucesso!');
-        showSuccessMessage.value = false;
-        
-        // Redirecionar para a tela de raspadinha
-        router.push('/games/scratch-card');
+      if (!token) {
+        error.value = 'Usuário não autenticado. Faça login novamente.';
+        isLoading.value = false;
+        return false;
       }
       
-      isLoading.value = false;
-      return true;
-    } catch (err) {
+      // Configurar instância do axios com o token
+      const axiosInstance = axios.create({
+        baseURL: API_URL,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        withCredentials: true
+      });
+      
+      // Chamar a API para criar uma transação de depósito
+      const response = await axiosInstance.post('/transactions/deposit', {
+        amount,
+        paymentMethod,
+        gatewayId: selectedGateway.value.id
+      });
+      
+      if (response.data.success) {
+        if (paymentMethod === 'pix') {
+          // Armazenar dados do PIX retornados pela API
+          qrCodeUrl.value = response.data.qrCodeUrl || '';
+          pixCode.value = response.data.pixCode || '';
+          showSuccessMessage.value = true;
+        } else if (paymentMethod === 'card') {
+          // Redirecionar para a página de pagamento do UnifyPay
+          if (response.data.redirectUrl) {
+            window.location.href = response.data.redirectUrl;
+          } else {
+            // Atualizar saldo do usuário (caso o pagamento seja processado imediatamente)
+            if (authStore.user && response.data.status === 'completed') {
+              authStore.user.balance += amount;
+              ElMessage.success('Depósito realizado com sucesso!');
+              router.push('/games/scratch-card');
+            } else {
+              showSuccessMessage.value = true;
+            }
+          }
+        }
+        
+        isLoading.value = false;
+        return true;
+      } else {
+        throw new Error(response.data.message || 'Falha ao processar depósito');
+      }
+    } catch (err: any) {
       console.error('Erro ao processar depósito:', err);
-      error.value = 'Não foi possível processar o depósito. Tente novamente.';
+      error.value = 'Não foi possível processar o depósito: ' + (err.response?.data?.message || err.message);
       isLoading.value = false;
       return false;
     }
@@ -202,15 +236,23 @@ export const useUserPaymentStore = defineStore('userPayment', () => {
       return false;
     }
     
-    const { amount, method } = withdrawData;
+    const { amount, method, pixKey, pixKeyType, cardNumber, cardName, cardBank } = withdrawData;
     
     // Verificar se o método de pagamento é suportado pelo gateway
-    if (method === 'pix' && !selectedGateway.value.paymentMethods.allowPix) {
+    const isPixAllowed = selectedGateway.value.paymentMethods?.allowPix ?? 
+                         selectedGateway.value.allowPix ?? 
+                         true;
+    
+    const isCardAllowed = selectedGateway.value.paymentMethods?.allowCard ?? 
+                          selectedGateway.value.allowCard ?? 
+                          true;
+    
+    if (method === 'pix' && !isPixAllowed) {
       error.value = 'Este gateway não permite saques via PIX.';
       return false;
     }
     
-    if (method === 'card' && !selectedGateway.value.paymentMethods.allowCard) {
+    if (method === 'card' && !isCardAllowed) {
       error.value = 'Este gateway não permite saques via cartão.';
       return false;
     }
@@ -225,42 +267,119 @@ export const useUserPaymentStore = defineStore('userPayment', () => {
     error.value = null;
     
     try {
-      // Simulação de processamento de saque
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Obter token válido
+      const token = await authStore.getValidToken();
       
-      // Atualizar saldo do usuário (simulação)
-      if (authStore.user) {
-        authStore.user.balance -= amount;
+      if (!token) {
+        error.value = 'Usuário não autenticado. Faça login novamente.';
+        isLoading.value = false;
+        return false;
       }
       
-      showSuccessMessage.value = true;
-      isLoading.value = false;
-      return true;
-    } catch (err) {
+      // Configurar instância do axios com o token
+      const axiosInstance = axios.create({
+        baseURL: API_URL,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        withCredentials: true
+      });
+      
+      // Preparar dados para a API
+      const withdrawPayload: any = {
+        amount,
+        paymentMethod: method,
+        gatewayId: selectedGateway.value.id
+      };
+      
+      // Adicionar dados específicos do método de pagamento
+      if (method === 'pix' && pixKey && pixKeyType) {
+        withdrawPayload.pixKey = pixKey;
+        withdrawPayload.pixKeyType = pixKeyType;
+      } else if (method === 'card' && cardNumber && cardName && cardBank) {
+        withdrawPayload.cardNumber = cardNumber;
+        withdrawPayload.cardName = cardName;
+        withdrawPayload.cardBank = cardBank;
+      }
+      
+      // Chamar a API para criar uma transação de saque
+      const response = await axiosInstance.post('/transactions/withdraw', withdrawPayload);
+      
+      if (response.data.success) {
+        // Atualizar saldo do usuário
+        if (authStore.user) {
+          authStore.user.balance -= amount;
+        }
+        
+        showSuccessMessage.value = true;
+        isLoading.value = false;
+        return true;
+      } else {
+        throw new Error(response.data.message || 'Falha ao processar saque');
+      }
+    } catch (err: any) {
       console.error('Erro ao processar saque:', err);
-      error.value = 'Não foi possível processar o saque. Tente novamente.';
+      error.value = 'Não foi possível processar o saque: ' + (err.response?.data?.message || err.message);
       isLoading.value = false;
       return false;
     }
   }
   
-  // Verificar depósito (simulação)
-  async function checkDepositStatus() {
-    // Simulação de verificação de depósito
-    await new Promise(resolve => setTimeout(resolve, 1000));
+  // Verificar status do depósito
+  async function checkDepositStatus(transactionId?: string) {
+    isLoading.value = true;
     
-    // Atualizar saldo do usuário (simulação)
-    if (authStore.user) {
-      authStore.user.balance += 100; // Valor fixo para simulação
+    try {
+      // Obter token válido
+      const token = await authStore.getValidToken();
+      
+      if (!token) {
+        error.value = 'Usuário não autenticado. Faça login novamente.';
+        isLoading.value = false;
+        return false;
+      }
+      
+      // Configurar instância do axios com o token
+      const axiosInstance = axios.create({
+        baseURL: API_URL,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        withCredentials: true
+      });
+      
+      // Chamar a API para verificar o status da transação
+      const response = await axiosInstance.get(`/transactions/status${transactionId ? `/${transactionId}` : ''}`);
+      
+      if (response.data.success && response.data.status === 'completed') {
+        // Atualizar saldo do usuário
+        if (authStore.user && response.data.amount) {
+          authStore.user.balance += parseFloat(response.data.amount);
+        }
+        
+        ElMessage.success('Depósito confirmado com sucesso!');
+        showSuccessMessage.value = false;
+        
+        // Redirecionar para a tela de raspadinha
+        router.push('/games/scratch-card');
+        
+        isLoading.value = false;
+        return true;
+      } else if (response.data.status === 'pending') {
+        ElMessage.info('Seu pagamento ainda está sendo processado. Tente novamente em alguns instantes.');
+        isLoading.value = false;
+        return false;
+      } else {
+        throw new Error(response.data.message || 'Falha ao verificar status do depósito');
+      }
+    } catch (err: any) {
+      console.error('Erro ao verificar status do depósito:', err);
+      error.value = 'Não foi possível verificar o status do depósito: ' + (err.response?.data?.message || err.message);
+      isLoading.value = false;
+      return false;
     }
-    
-    ElMessage.success('Depósito confirmado com sucesso!');
-    showSuccessMessage.value = false;
-    
-    // Redirecionar para a tela de raspadinha
-    router.push('/games/scratch-card');
-    
-    return true;
   }
   
   // Resetar estado

@@ -24,6 +24,11 @@ const PaymentGateway = sequelize.define('PaymentGateway', {
     type: DataTypes.BOOLEAN,
     defaultValue: false
   },
+  apiEndpoint: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    defaultValue: 'https://api.unifypay.co'
+  },
   publicKey: {
     type: DataTypes.TEXT,
     allowNull: true,
@@ -86,6 +91,7 @@ PaymentGateway.prototype.toJSON = function() {
     description: values.description || '',
     logo: values.logo || '',
     isActive: values.isActive,
+    apiEndpoint: values.apiEndpoint || 'https://api.unifypay.co',
     apiKeys: {
       publicKey: values.publicKey || '',
       secretKey: values.secretKey || ''

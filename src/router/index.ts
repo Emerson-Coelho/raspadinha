@@ -114,6 +114,7 @@ const router = createRouter({
         {
           path: 'settings',
           component: () => import('../views/admin/SettingsView.vue'),
+          meta: { requiresAdmin: true },
           children: [
             {
               path: '',
@@ -130,6 +131,12 @@ const router = createRouter({
               component: () => import('../views/admin/GeneralSettingsView.vue')
             }
           ]
+        },
+        {
+          path: 'system-logs',
+          name: 'admin-system-logs',
+          component: () => import('../views/admin/SystemLogsView.vue'),
+          meta: { requiresAdmin: true }
         },
         {
           path: 'developer',

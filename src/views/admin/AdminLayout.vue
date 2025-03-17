@@ -25,6 +25,7 @@ const menuItems = [
   { name: 'Sorteios', route: 'admin-lucky-draws', icon: 'gift' },
   { name: 'Relatórios', route: 'admin-reports', icon: 'chart-bar' },
   { name: 'Configurações', route: 'admin-settings-gateways', icon: 'cog' },
+  { name: 'Logs do Sistema', route: 'admin-system-logs', icon: 'exclamation-circle' },
   { 
     name: 'Desenvolvedor', 
     route: 'admin-developer', 

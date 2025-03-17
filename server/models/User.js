@@ -32,7 +32,7 @@ const User = sequelize.define('User', {
     }
   },
   cpf: {
-    type: DataTypes.STRING(14),
+    type: DataTypes.STRING(20),
     allowNull: false,
     unique: true,
     validate: {
@@ -95,7 +95,7 @@ User.prototype.getSignedJwtToken = function() {
   return jwt.sign(
     { id: this.id, role: this.role },
     process.env.JWT_SECRET || 'secret_key',
-    { expiresIn: process.env.JWT_EXPIRATION || '1h' }
+    { expiresIn: '7d' }
   );
 };
 

@@ -2,9 +2,12 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import type { PaymentGateway } from '../../types/payment';
 import { usePaymentStore } from '../../stores/payment';
+import { useAdminStore } from '../../stores/admin';
 
 // Store de pagamento
 const paymentStore = usePaymentStore();
+// Store de admin para verificar se é super_admin
+const adminStore = useAdminStore();
 
 // Gateway em edição
 const editingGateway = ref<PaymentGateway | null>(null);
@@ -17,6 +20,7 @@ const isSaving = ref(false);
 // Computed properties
 const gateways = computed(() => paymentStore.gateways);
 const isLoading = computed(() => paymentStore.isLoading);
+const isSuperAdmin = computed(() => adminStore.admin?.role === 'super_admin');
 
 // Observar erros da store
 watch(() => paymentStore.error, (newError) => {
@@ -268,34 +272,45 @@ onMounted(() => {
           </div>
 
           <form @submit.prevent="saveGatewaySettings">
+            <!-- Configuração do Endpoint da API (apenas para super_admin) -->
+            <div v-if="isSuperAdmin" class="space-y-2">
+              <h4 class="text-lg font-medium text-white">Endpoint da API</h4>
+              <div class="bg-gray-700 p-4 rounded-md">
+                <div class="mb-4">
+                  <label class="block text-sm font-medium text-gray-300 mb-1">URL do Endpoint</label>
+                  <input 
+                    v-model="editingGateway.apiEndpoint" 
+                    type="text" 
+                    class="w-full bg-gray-900 border border-gray-700 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="https://api.unifypay.co"
+                  />
+                  <p class="mt-1 text-xs text-yellow-500">
+                    <span class="font-bold">Atenção:</span> Alterar este valor pode causar falhas nas transações se o endpoint não estiver correto.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
             <!-- Chaves de API -->
-            <div class="mb-6">
-              <h4 class="text-sm font-medium text-gray-400 mb-3">Chaves de API</h4>
-              
-              <div class="space-y-4">
-                <div>
-                  <label for="publicKey" class="block text-sm font-medium text-gray-300 mb-1">
-                    Chave Pública
-                  </label>
-                  <input
-                    id="publicKey"
-                    v-model="editingGateway.apiKeys.publicKey"
-                    type="text"
-                    class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    placeholder="Insira a chave pública"
+            <div class="space-y-2">
+              <h4 class="text-lg font-medium text-white">Chaves de API</h4>
+              <div class="bg-gray-700 p-4 rounded-md">
+                <div class="mb-4">
+                  <label class="block text-sm font-medium text-gray-300 mb-1">Chave Pública</label>
+                  <input 
+                    v-model="editingGateway.apiKeys.publicKey" 
+                    type="text" 
+                    class="w-full bg-gray-900 border border-gray-700 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="Chave pública do gateway"
                   />
                 </div>
-                
                 <div>
-                  <label for="secretKey" class="block text-sm font-medium text-gray-300 mb-1">
-                    Chave Secreta
-                  </label>
-                  <input
-                    id="secretKey"
-                    v-model="editingGateway.apiKeys.secretKey"
-                    type="password"
-                    class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    placeholder="Insira a chave secreta"
+                  <label class="block text-sm font-medium text-gray-300 mb-1">Chave Secreta</label>
+                  <input 
+                    v-model="editingGateway.apiKeys.secretKey" 
+                    type="password" 
+                    class="w-full bg-gray-900 border border-gray-700 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="Chave secreta do gateway"
                   />
                 </div>
               </div>

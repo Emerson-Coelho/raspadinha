@@ -4,7 +4,7 @@ import { useAuthStore } from '../../stores/auth';
 import { useUserPaymentStore } from '../../stores/userPayment';
 import { ElMessage } from 'element-plus';
 import { useRouter } from 'vue-router';
-import type { PaymentGateway } from '../../types/payment';
+import type { PaymentGateway, WithdrawForm } from '../../types/payment';
 
 const authStore = useAuthStore();
 const paymentStore = useUserPaymentStore();
@@ -16,14 +16,16 @@ const activeMethod = ref<'pix' | 'card'>('pix');
 const predefinedValues = [50, 100, 200, 500];
 
 // Formulário de saque
-const withdrawForm = reactive({
+const withdrawForm = reactive<WithdrawForm>({
   amount: 100,
   customAmount: '',
   pixKey: '',
-  pixKeyType: 'cpf',
+  pixKeyType: '',
   cardNumber: '',
   cardName: '',
-  cardBank: ''
+  cardBank: '',
+  gateway: '',
+  balance: ''
 });
 
 // Tipos de chave PIX
@@ -38,6 +40,7 @@ const pixKeyTypes = [
 const errors = reactive({
   amount: '',
   pixKey: '',
+  pixKeyType: '',
   cardNumber: '',
   cardName: '',
   cardBank: '',
@@ -56,12 +59,16 @@ const formattedAmount = computed(() => {
 // Verificar se o método de pagamento está disponível
 const isPixAvailable = computed(() => {
   if (!paymentStore.selectedGateway) return false;
-  return paymentStore.selectedGateway.paymentMethods.allowPix;
+  return paymentStore.selectedGateway.paymentMethods?.allowPix ?? 
+         paymentStore.selectedGateway.allowPix ?? 
+         true;
 });
 
 const isCardAvailable = computed(() => {
   if (!paymentStore.selectedGateway) return false;
-  return paymentStore.selectedGateway.paymentMethods.allowCard;
+  return paymentStore.selectedGateway.paymentMethods?.allowCard ?? 
+         paymentStore.selectedGateway.allowCard ?? 
+         true;
 });
 
 // Verificar se o usuário tem saldo suficiente
@@ -69,6 +76,9 @@ const hasSufficientBalance = computed(() => {
   if (!authStore.user) return false;
   return authStore.user.balance >= withdrawForm.amount;
 });
+
+// Valor selecionado (predefinido ou personalizado)
+const selectedAmount = ref<number | 'custom'>(100);
 
 // Observar mudanças no valor personalizado e aplicar automaticamente
 watch(() => withdrawForm.customAmount, (newValue) => {
@@ -89,6 +99,7 @@ watch(() => withdrawForm.customAmount, (newValue) => {
 function selectAmount(value: number) {
   withdrawForm.amount = value;
   withdrawForm.customAmount = '';
+  selectedAmount.value = value;
   errors.amount = '';
   errors.balance = '';
 }
@@ -111,6 +122,7 @@ function validateAndSetCustomAmount(value: number) {
   }
   
   withdrawForm.amount = value;
+  selectedAmount.value = 'custom';
   errors.amount = '';
 }
 
@@ -190,67 +202,103 @@ function selectGateway(gateway: PaymentGateway) {
   }
 }
 
+// Variáveis de estado para processamento
+const isProcessing = ref(false);
+const errorMessage = ref('');
+const successMessage = ref('');
+
 // Processar saque
-async function processWithdraw() {
-  // Limpar erros anteriores
-  Object.keys(errors).forEach(key => {
-    errors[key as keyof typeof errors] = '';
-  });
-  
-  // Validar valor
-  if (withdrawForm.amount < 50) {
-    errors.amount = 'O valor mínimo para saque é R$ 50,00';
-    return;
+const processWithdraw = async () => {
+  isProcessing.value = true;
+  errorMessage.value = '';
+  successMessage.value = '';
+
+  try {
+    // Validar valor de saque
+    let withdrawAmount = 0;
+    if (selectedAmount.value === 'custom') {
+      if (!withdrawForm.customAmount) {
+        errorMessage.value = 'Por favor, insira um valor personalizado';
+        isProcessing.value = false;
+        return;
+      }
+      withdrawAmount = parseFloat(withdrawForm.customAmount);
+    } else {
+      withdrawAmount = withdrawForm.amount;
+    }
+
+    if (withdrawAmount <= 0) {
+      errorMessage.value = 'O valor do saque deve ser maior que zero';
+      isProcessing.value = false;
+      return;
+    }
+
+    if (withdrawAmount > parseFloat(withdrawForm.balance)) {
+      errorMessage.value = 'Saldo insuficiente para este saque';
+      isProcessing.value = false;
+      return;
+    }
+
+    // Validar método de pagamento
+    if (activeMethod.value === 'pix') {
+      if (!withdrawForm.pixKey) {
+        errorMessage.value = 'Por favor, insira sua chave PIX';
+        isProcessing.value = false;
+        return;
+      }
+      if (!withdrawForm.pixKeyType) {
+        errorMessage.value = 'Por favor, selecione o tipo de chave PIX';
+        isProcessing.value = false;
+        return;
+      }
+    } else if (activeMethod.value === 'card') {
+      if (!withdrawForm.cardNumber || !withdrawForm.cardName || !withdrawForm.cardBank) {
+        errorMessage.value = 'Por favor, preencha todos os dados do cartão';
+        isProcessing.value = false;
+        return;
+      }
+    }
+
+    // Verificar se há um gateway selecionado
+    if (!paymentStore.selectedGateway) {
+      errorMessage.value = 'Selecione um gateway de pagamento';
+      isProcessing.value = false;
+      return;
+    }
+
+    // Preparar dados para envio
+    const withdrawData = {
+      amount: withdrawAmount,
+      method: activeMethod.value,
+      pixKey: activeMethod.value === 'pix' ? withdrawForm.pixKey : undefined,
+      pixKeyType: activeMethod.value === 'pix' ? withdrawForm.pixKeyType : undefined,
+      cardNumber: activeMethod.value === 'card' ? withdrawForm.cardNumber : undefined,
+      cardName: activeMethod.value === 'card' ? withdrawForm.cardName : undefined,
+      cardBank: activeMethod.value === 'card' ? withdrawForm.cardBank : undefined
+    };
+
+    // Processar saque
+    const result = await paymentStore.processWithdraw(withdrawData);
+    
+    if (result) {
+      successMessage.value = 'Solicitação de saque enviada com sucesso!';
+      // Resetar formulário
+      withdrawForm.customAmount = '';
+      withdrawForm.pixKey = '';
+      withdrawForm.pixKeyType = '';
+      withdrawForm.cardNumber = '';
+      withdrawForm.cardName = '';
+      withdrawForm.cardBank = '';
+    } else {
+      errorMessage.value = paymentStore.error || 'Erro ao processar saque';
+    }
+  } catch (error) {
+    console.error('Erro ao processar saque:', error);
+    errorMessage.value = 'Ocorreu um erro ao processar seu saque. Tente novamente.';
+  } finally {
+    isProcessing.value = false;
   }
-  
-  // Verificar saldo
-  if (!hasSufficientBalance.value) {
-    errors.balance = 'Saldo insuficiente para realizar este saque';
-    return;
-  }
-  
-  // Verificar se há um gateway selecionado
-  if (!paymentStore.selectedGateway) {
-    errors.gateway = 'Selecione um gateway de pagamento';
-    return;
-  }
-  
-  // Verificar se o método de pagamento está disponível
-  if (activeMethod.value === 'pix' && !isPixAvailable.value) {
-    errors.gateway = 'Este gateway não suporta saques via PIX';
-    return;
-  }
-  
-  if (activeMethod.value === 'card' && !isCardAvailable.value) {
-    errors.gateway = 'Este gateway não suporta saques via cartão';
-    return;
-  }
-  
-  // Validar formulário de acordo com o método selecionado
-  if (activeMethod.value === 'pix' && !validatePixForm()) {
-    return;
-  }
-  
-  if (activeMethod.value === 'card' && !validateCardForm()) {
-    return;
-  }
-  
-  // Processar saque usando a store
-  const withdrawData = {
-    amount: withdrawForm.amount,
-    method: activeMethod.value,
-    ...(activeMethod.value === 'pix' ? {
-      pixKey: withdrawForm.pixKey,
-      pixKeyType: withdrawForm.pixKeyType
-    } : {
-      cardNumber: withdrawForm.cardNumber,
-      cardName: withdrawForm.cardName,
-      cardBank: withdrawForm.cardBank
-    })
-  };
-  
-  await paymentStore.processWithdraw(withdrawData);
-}
+};
 
 // Resetar formulário
 function resetForm() {
@@ -396,78 +444,68 @@ onMounted(async () => {
           <p v-if="errors.balance" class="mt-2 text-red-500 text-sm">{{ errors.balance }}</p>
         </div>
         
-        <!-- Formulário PIX -->
+        <!-- Formulário de saque via PIX -->
         <div v-if="activeMethod === 'pix'" class="mb-6">
-          <h2 class="text-xl font-bold mb-4">Dados para Recebimento via PIX</h2>
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-400 mb-1">Tipo de Chave PIX</label>
+            <select
+              v-model="withdrawForm.pixKeyType"
+              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            >
+              <option value="">Selecione o tipo de chave</option>
+              <option value="cpf">CPF</option>
+              <option value="email">E-mail</option>
+              <option value="phone">Telefone</option>
+              <option value="random">Chave Aleatória</option>
+            </select>
+            <p v-if="errors.pixKeyType" class="mt-1 text-red-500 text-sm">{{ errors.pixKeyType }}</p>
+          </div>
           
-          <div class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-400 mb-1">Tipo de Chave PIX</label>
-              <select
-                v-model="withdrawForm.pixKeyType"
-                class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              >
-                <option v-for="type in pixKeyTypes" :key="type.value" :value="type.value">
-                  {{ type.label }}
-                </option>
-              </select>
-            </div>
-            
-            <div>
-              <label class="block text-sm font-medium text-gray-400 mb-1">Chave PIX</label>
-              <input
-                v-model="withdrawForm.pixKey"
-                type="text"
-                class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                :placeholder="
-                  withdrawForm.pixKeyType === 'cpf' ? '000.000.000-00' :
-                  withdrawForm.pixKeyType === 'email' ? 'seu@email.com' :
-                  withdrawForm.pixKeyType === 'phone' ? '(00) 00000-0000' :
-                  'Chave aleatória'
-                "
-              />
-              <p v-if="errors.pixKey" class="mt-2 text-red-500 text-sm">{{ errors.pixKey }}</p>
-            </div>
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-400 mb-1">Chave PIX</label>
+            <input
+              v-model="withdrawForm.pixKey"
+              type="text"
+              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              placeholder="Digite sua chave PIX"
+            />
+            <p v-if="errors.pixKey" class="mt-1 text-red-500 text-sm">{{ errors.pixKey }}</p>
           </div>
         </div>
         
-        <!-- Formulário de cartão -->
+        <!-- Formulário de saque via cartão -->
         <div v-if="activeMethod === 'card'" class="mb-6">
-          <h2 class="text-xl font-bold mb-4">Dados Bancários</h2>
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-400 mb-1">Número do Cartão</label>
+            <input
+              v-model="withdrawForm.cardNumber"
+              type="text"
+              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              placeholder="0000 0000 0000 0000"
+            />
+            <p v-if="errors.cardNumber" class="mt-1 text-red-500 text-sm">{{ errors.cardNumber }}</p>
+          </div>
           
-          <div class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-400 mb-1">Número do Cartão</label>
-              <input
-                v-model="withdrawForm.cardNumber"
-                type="text"
-                class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                placeholder="0000 0000 0000 0000"
-              />
-              <p v-if="errors.cardNumber" class="mt-2 text-red-500 text-sm">{{ errors.cardNumber }}</p>
-            </div>
-            
-            <div>
-              <label class="block text-sm font-medium text-gray-400 mb-1">Nome do Titular</label>
-              <input
-                v-model="withdrawForm.cardName"
-                type="text"
-                class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                placeholder="Nome completo do titular"
-              />
-              <p v-if="errors.cardName" class="mt-2 text-red-500 text-sm">{{ errors.cardName }}</p>
-            </div>
-            
-            <div>
-              <label class="block text-sm font-medium text-gray-400 mb-1">Banco</label>
-              <input
-                v-model="withdrawForm.cardBank"
-                type="text"
-                class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                placeholder="Nome do banco"
-              />
-              <p v-if="errors.cardBank" class="mt-2 text-red-500 text-sm">{{ errors.cardBank }}</p>
-            </div>
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-400 mb-1">Nome no Cartão</label>
+            <input
+              v-model="withdrawForm.cardName"
+              type="text"
+              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              placeholder="Digite o nome como está no cartão"
+            />
+            <p v-if="errors.cardName" class="mt-1 text-red-500 text-sm">{{ errors.cardName }}</p>
+          </div>
+          
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-400 mb-1">Banco</label>
+            <input
+              v-model="withdrawForm.cardBank"
+              type="text"
+              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              placeholder="Digite o nome do banco"
+            />
+            <p v-if="errors.cardBank" class="mt-1 text-red-500 text-sm">{{ errors.cardBank }}</p>
           </div>
         </div>
         
