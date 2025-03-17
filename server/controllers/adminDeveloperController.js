@@ -83,21 +83,23 @@ export const createTestUsers = asyncHandler(async (req, res, next) => {
     
     if (continueFromLast) {
       console.log('Buscando último usuário para continuar a partir dele...');
-      const [lastUserResult] = await sequelize.query(`
-        SELECT email FROM users 
-        WHERE email LIKE 'usuario%@teste.com' 
-        ORDER BY email DESC 
-        LIMIT 1
-      `);
+      const lastUser = await User.findOne({
+        where: {
+          email: {
+            [Op.like]: 'usuario%@teste.com'
+          }
+        },
+        order: [['email', 'DESC']],
+        attributes: ['email']
+      });
       
-      if (lastUserResult.length > 0) {
-        const lastEmail = lastUserResult[0].email;
-        console.log('Último email encontrado:', lastEmail);
+      if (lastUser) {
+        const lastEmail = lastUser.email;
         const lastIndex = parseInt(lastEmail.replace('usuario', '').replace('@teste.com', ''));
         
         if (!isNaN(lastIndex)) {
           startIndex = lastIndex + 1;
-          console.log('Índice inicial definido como:', startIndex);
+          console.log(`Continuando a partir do índice ${startIndex}`);
         }
       }
     }
@@ -107,31 +109,14 @@ export const createTestUsers = asyncHandler(async (req, res, next) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
     
-    // Função para gerar um CPF válido
-    function generateCPF(index) {
-      // Usar o índice para garantir CPFs únicos
-      const baseNumber = 10000000000 + index;
-      const baseStr = baseNumber.toString().padStart(11, '0');
-      
-      const n1 = parseInt(baseStr[0]);
-      const n2 = parseInt(baseStr[1]);
-      const n3 = parseInt(baseStr[2]);
-      const n4 = parseInt(baseStr[3]);
-      const n5 = parseInt(baseStr[4]);
-      const n6 = parseInt(baseStr[5]);
-      const n7 = parseInt(baseStr[6]);
-      const n8 = parseInt(baseStr[7]);
-      const n9 = parseInt(baseStr[8]);
-      
-      let d1 = n9 * 2 + n8 * 3 + n7 * 4 + n6 * 5 + n5 * 6 + n4 * 7 + n3 * 8 + n2 * 9 + n1 * 10;
-      d1 = 11 - (d1 % 11);
-      if (d1 >= 10) d1 = 0;
-      
-      let d2 = d1 * 2 + n9 * 3 + n8 * 4 + n7 * 5 + n6 * 6 + n5 * 7 + n4 * 8 + n3 * 9 + n2 * 10 + n1 * 11;
-      d2 = 11 - (d2 % 11);
-      if (d2 >= 10) d2 = 0;
-      
-      return `${n1}${n2}${n3}.${n4}${n5}${n6}.${n7}${n8}${n9}-${d1}${d2}`;
+    // Função para gerar um CPF sequencial (sem validação)
+    function generateCPF(index, attempt = 0) {
+      // Gerar um CPF sequencial baseado no índice
+      // Formato: 111.222.XXX-YY onde XXX é o índice formatado com zeros à esquerda
+      // Se houver tentativas adicionais, modificamos o final para garantir unicidade
+      const formattedIndex = String(index).padStart(3, '0');
+      const suffix = attempt > 0 ? String(attempt).padStart(2, '0') : '00';
+      return `111.222.${formattedIndex}-${suffix}`;
     }
     
     // Função para gerar um número de telefone
@@ -162,106 +147,228 @@ export const createTestUsers = asyncHandler(async (req, res, next) => {
     
     let totalCreated = 0;
     let totalErrors = 0;
+    let errorDetails = [];
+    let createdIndices = new Set(); // Para rastrear quais índices foram criados com sucesso
     
-    for (let batch = 0; batch < totalBatches; batch++) {
-      const batchStartIndex = startIndex + (batch * batchSize);
-      const batchEndIndex = Math.min(startIndex + ((batch + 1) * batchSize) - 1, endIndex);
-      
-      console.log(`Processando lote ${batch + 1}/${totalBatches} (${batchStartIndex} até ${batchEndIndex})`);
-      
-      const usersToInsert = [];
-      
-      for (let i = batchStartIndex; i <= batchEndIndex; i++) {
-        const balance = parseFloat(getRandomNumber(0, 100000).toFixed(2));
-        const role = Math.random() > 0.9 ? 'vip' : 'user'; // 10% dos usuários são VIP
-        const status = Math.random() > 0.05 ? 'active' : (Math.random() > 0.5 ? 'inactive' : 'suspended'); // 95% ativos, 2.5% inativos, 2.5% suspensos
-        const lastLogin = Math.random() > 0.2 ? getRandomDate() : null; // 80% dos usuários têm um último login
-        const now = new Date();
-        
-        usersToInsert.push({
-          id: uuidv4(),
-          name: `Usuário Teste ${i}`,
-          email: `usuario${i}@teste.com`,
-          password: hashedPassword,
-          cpf: generateCPF(i),
-          phone: generatePhone(),
-          balance: balance,
-          role: role,
-          status: status,
-          lastLogin: lastLogin ? lastLogin.toISOString() : null,
-          createdAt: now.toISOString(),
-          updatedAt: now.toISOString()
-        });
+    // Primeiro, verificar quais usuários já existem para evitar duplicatas
+    console.log('Verificando usuários existentes...');
+    const existingUsers = await User.findAll({
+      where: {
+        email: {
+          [Op.like]: 'usuario%@teste.com'
+        }
+      },
+      attributes: ['email']
+    });
+    
+    const existingIndices = new Set();
+    existingUsers.forEach(user => {
+      const index = parseInt(user.email.replace('usuario', '').replace('@teste.com', ''));
+      if (!isNaN(index) && index >= startIndex && index <= endIndex) {
+        existingIndices.add(index);
+      }
+    });
+    
+    console.log(`Encontrados ${existingIndices.size} usuários existentes no intervalo solicitado.`);
+    
+    // Verificar CPFs existentes para evitar conflitos
+    console.log('Verificando CPFs existentes...');
+    const existingCPFs = new Set();
+    const cpfResults = await sequelize.query('SELECT cpf FROM users');
+    cpfResults[0].forEach(result => {
+      existingCPFs.add(result.cpf);
+    });
+    
+    console.log(`Encontrados ${existingCPFs.size} CPFs existentes no banco de dados.`);
+    
+    // Criar usuários em ordem sequencial
+    for (let currentIndex = startIndex; currentIndex <= endIndex; currentIndex++) {
+      // Pular usuários que já existem
+      if (existingIndices.has(currentIndex)) {
+        continue;
       }
       
       try {
-        // Inserir usuários em lote usando SQL direto
-        const valuesSql = usersToInsert.map(user => `(
-          '${user.id}', 
-          '${user.name}', 
-          '${user.email}', 
-          '${user.password}', 
-          '${user.cpf}', 
-          '${user.phone}', 
-          ${user.balance}, 
-          '${user.role}', 
-          '${user.status}', 
-          ${user.lastLogin ? `'${user.lastLogin}'` : 'NULL'}, 
-          '${user.createdAt}', 
-          '${user.updatedAt}'
-        )`).join(', ');
+        const balance = parseFloat(getRandomNumber(0, 100000).toFixed(2));
+        const role = Math.random() > 0.9 ? 'vip' : 'user'; // 10% dos usuários são VIP
         
-        await sequelize.query(`
+        // Garantir que o status use apenas os valores permitidos
+        let status;
+        const statusRandom = Math.random();
+        if (statusRandom > 0.95) {
+          status = 'suspended';
+        } else if (statusRandom > 0.9) {
+          status = 'inactive';
+        } else {
+          status = 'active';
+        }
+        
+        const lastLogin = Math.random() > 0.2 ? getRandomDate() : null; // 80% dos usuários têm um último login
+        const now = new Date();
+        const userId = uuidv4();
+        const userName = `Usuário Teste ${currentIndex}`;
+        const email = `usuario${currentIndex}@teste.com`;
+        let cpf = generateCPF(currentIndex);
+        
+        // Verificar se o CPF já existe e gerar um novo se necessário
+        let attempt = 0;
+        while (existingCPFs.has(cpf) && attempt < 10) {
+          attempt++;
+          cpf = generateCPF(currentIndex, attempt);
+        }
+        
+        const phone = generatePhone();
+        
+        // Usar consulta parametrizada para evitar problemas de injeção SQL
+        const insertQuery = `
           INSERT INTO users (
             id, name, email, password, cpf, phone, balance, role, status, "lastLogin", "createdAt", "updatedAt"
-          ) VALUES ${valuesSql}
+          ) VALUES (
+            :id, :name, :email, :password, :cpf, :phone, :balance, :role, :status, :lastLogin, :createdAt, :updatedAt
+          )
           ON CONFLICT (email) DO NOTHING
-        `);
+        `;
         
-        totalCreated += usersToInsert.length;
-        console.log(`Lote ${batch + 1} concluído. Total criado até agora: ${totalCreated}`);
+        await sequelize.query(insertQuery, {
+          replacements: {
+            id: userId,
+            name: userName,
+            email: email,
+            password: hashedPassword,
+            cpf: cpf,
+            phone: phone,
+            balance: balance,
+            role: role,
+            status: status,
+            lastLogin: lastLogin || null,
+            createdAt: now,
+            updatedAt: now
+          },
+          type: sequelize.QueryTypes.INSERT
+        });
+        
+        // Adicionar o CPF ao conjunto de CPFs existentes
+        existingCPFs.add(cpf);
+        
+        totalCreated++;
+        createdIndices.add(currentIndex);
+        
+        // Log de progresso a cada 1000 usuários, em vez de 100
+        if (totalCreated % 1000 === 0) {
+          console.log(`Progresso: ${totalCreated} usuários criados. Último: ${email}`);
+        }
       } catch (error) {
-        console.error(`Erro ao inserir lote ${batch + 1}:`, error.message);
+        console.error(`Erro ao criar usuário usuario${currentIndex}@teste.com: ${error.message}`);
+        errorDetails.push({
+          email: `usuario${currentIndex}@teste.com`,
+          error: error.message
+        });
+        totalErrors++;
         
-        // Tentar inserir um por um para identificar quais estão causando problemas
-        console.log('Tentando inserir usuários um por um...');
-        for (const user of usersToInsert) {
+        // Verificar se o erro é devido a restrição de chave única no CPF
+        if (error.message.includes('unique constraint') && error.message.includes('cpf')) {
+          // Tentar criar com um CPF diferente usando um offset maior
+          const newBalance = Math.floor(Math.random() * 1000);
+          const newRole = Math.random() > 0.9 ? 'vip' : 'user';
+          
+          // Garantir que o status use apenas os valores permitidos
+          let newStatus;
+          const statusRandom = Math.random();
+          if (statusRandom > 0.95) {
+            newStatus = 'suspended';
+          } else if (statusRandom > 0.9) {
+            newStatus = 'inactive';
+          } else {
+            newStatus = 'active';
+          }
+          
+          const newLastLogin = Math.random() > 0.5 ? new Date() : null;
+          const newUserName = `Usuário Teste ${currentIndex}`;
+          const newEmail = `usuario${currentIndex}@teste.com`;
+          
+          // Usar um offset maior para garantir um CPF único
+          let newCpf = generateCPF(currentIndex, 100); // Começar com um offset grande para evitar colisões
+          
+          // Verificar se o novo CPF já existe e gerar outro se necessário
+          let retryAttempt = 100;
+          while (existingCPFs.has(newCpf) && retryAttempt < 110) {
+            retryAttempt++;
+            newCpf = generateCPF(currentIndex, retryAttempt);
+          }
+          
+          const newPhone = generatePhone();
+          
+          const retryInsertQuery = `
+            INSERT INTO users (
+              id, name, email, password, cpf, phone, balance, role, status, "lastLogin", "createdAt", "updatedAt"
+            ) VALUES (
+              :id, :name, :email, :password, :cpf, :phone, :balance, :role, :status, :lastLogin, :createdAt, :updatedAt
+            )
+            ON CONFLICT (email) DO NOTHING
+          `;
+          
           try {
-            await sequelize.query(`
-              INSERT INTO users (
-                id, name, email, password, cpf, phone, balance, role, status, "lastLogin", "createdAt", "updatedAt"
-              ) VALUES (
-                '${user.id}', 
-                '${user.name}', 
-                '${user.email}', 
-                '${user.password}', 
-                '${user.cpf}', 
-                '${user.phone}', 
-                ${user.balance}, 
-                '${user.role}', 
-                '${user.status}', 
-                ${user.lastLogin ? `'${user.lastLogin}'` : 'NULL'}, 
-                '${user.createdAt}', 
-                '${user.updatedAt}'
-              )
-              ON CONFLICT (email) DO NOTHING
-            `);
+            await sequelize.query(retryInsertQuery, {
+              replacements: {
+                id: userId,
+                name: newUserName,
+                email: newEmail,
+                password: hashedPassword,
+                cpf: newCpf,
+                phone: newPhone,
+                balance: newBalance,
+                role: newRole,
+                status: newStatus,
+                lastLogin: newLastLogin || null,
+                createdAt: now,
+                updatedAt: now
+              },
+              type: sequelize.QueryTypes.INSERT
+            });
+            
+            // Adicionar o novo CPF ao conjunto de CPFs existentes
+            existingCPFs.add(newCpf);
+            
             totalCreated++;
-          } catch (userError) {
-            console.error(`Erro ao inserir usuário ${user.email}:`, userError.message);
-            totalErrors++;
+            totalErrors--; // Corrigir o contador de erros
+            createdIndices.add(currentIndex);
+          } catch (retryError) {
+            console.error(`Falha na segunda tentativa para ${newEmail}: ${retryError.message}`);
           }
         }
       }
     }
     
+    // Verificar se todos os usuários foram criados em sequência
+    let missingIndices = [];
+    for (let i = startIndex; i <= endIndex; i++) {
+      if (!createdIndices.has(i) && !existingIndices.has(i)) {
+        missingIndices.push(i);
+      }
+    }
+    
+    if (missingIndices.length > 0) {
+      console.log(`Atenção: ${missingIndices.length} usuários não foram criados na sequência.`);
+      if (missingIndices.length <= 10) {
+        console.log(`Índices faltantes: ${missingIndices.join(', ')}`);
+      } else {
+        console.log(`Primeiros 10 índices faltantes: ${missingIndices.slice(0, 10).join(', ')}...`);
+      }
+    } else {
+      console.log('Todos os usuários foram criados em sequência correta!');
+    }
+    
     console.log(`Criação de usuários concluída. Total criado: ${totalCreated}, Erros: ${totalErrors}`);
+    
+    // Incluir detalhes dos erros na resposta (limitado a 10 para não sobrecarregar)
+    const errorSamples = errorDetails.slice(0, 10);
     
     res.status(200).json({
       success: true,
       message: `Criação de usuários concluída.`,
       created: totalCreated,
-      errors: totalErrors
+      errors: totalErrors,
+      errorSamples: errorSamples.length > 0 ? errorSamples : undefined
     });
   } catch (error) {
     console.error('Erro ao criar usuários de teste:', error);

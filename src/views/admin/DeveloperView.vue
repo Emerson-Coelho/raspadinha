@@ -142,6 +142,18 @@ async function createTestUsers() {
       output.value.push(`${response.data.created} usuários criados com sucesso!`);
       if (response.data.errors > 0) {
         output.value.push(`${response.data.errors} erros ocorreram durante a criação.`);
+        
+        // Exibir exemplos de erros se disponíveis
+        if (response.data.errorSamples && response.data.errorSamples.length > 0) {
+          output.value.push('Exemplos de erros:');
+          response.data.errorSamples.forEach((error: { email: string; error: string }) => {
+            output.value.push(`- ${error.email}: ${error.error}`);
+          });
+          
+          if (response.data.errors > response.data.errorSamples.length) {
+            output.value.push(`... e mais ${response.data.errors - response.data.errorSamples.length} erros.`);
+          }
+        }
       }
       await checkTableStatus();
     } else {
