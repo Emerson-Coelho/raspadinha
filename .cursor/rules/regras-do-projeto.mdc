@@ -46,6 +46,8 @@ Atente-se sobre o que se trata a aplicação:
 
 Estamos criando uma aplicação completa de raspadinha (o jogador irá raspar usando o mouse ou o touch do celular) e números da sorte (o jogador irá comprar números para participar de sorteios) usando Vue.js com Tailwind CSS.
 
+Nosso frontend está em src e o backend está no server
+
 Idioma da aplicação: português Brasil
 
 Backend: Node.js com Express.js

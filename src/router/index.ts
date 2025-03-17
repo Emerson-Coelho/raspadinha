@@ -112,6 +112,26 @@ const router = createRouter({
           component: () => import('../views/admin/ReportsView.vue')
         },
         {
+          path: 'settings',
+          component: () => import('../views/admin/SettingsView.vue'),
+          children: [
+            {
+              path: '',
+              redirect: { name: 'admin-settings-gateways' }
+            },
+            {
+              path: 'gateways',
+              name: 'admin-settings-gateways',
+              component: () => import('../views/admin/GatewaysSettingsView.vue')
+            },
+            {
+              path: 'general',
+              name: 'admin-settings-general',
+              component: () => import('../views/admin/GeneralSettingsView.vue')
+            }
+          ]
+        },
+        {
           path: 'developer',
           name: 'admin-developer',
           component: () => import('../views/admin/DeveloperView.vue'),
