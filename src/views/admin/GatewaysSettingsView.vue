@@ -332,6 +332,37 @@ onMounted(() => {
               </div>
             </div>
 
+            <!-- Métodos de Pagamento -->
+            <div class="mb-6">
+              <h4 class="text-sm font-medium text-gray-400 mb-3">Métodos de Pagamento</h4>
+              
+              <div class="space-y-3">
+                <div class="flex items-center">
+                  <input
+                    id="allowPix"
+                    v-model="editingGateway.paymentMethods.allowPix"
+                    type="checkbox"
+                    class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-600 rounded bg-gray-700"
+                  />
+                  <label for="allowPix" class="ml-2 block text-sm text-gray-300">
+                    Permitir PIX
+                  </label>
+                </div>
+                
+                <div class="flex items-center">
+                  <input
+                    id="allowCard"
+                    v-model="editingGateway.paymentMethods.allowCard"
+                    type="checkbox"
+                    class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-600 rounded bg-gray-700"
+                  />
+                  <label for="allowCard" class="ml-2 block text-sm text-gray-300">
+                    Permitir Cartão
+                  </label>
+                </div>
+              </div>
+            </div>
+
             <!-- Status -->
             <div class="mb-6">
               <h4 class="text-sm font-medium text-gray-400 mb-3">Status</h4>

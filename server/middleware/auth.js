@@ -17,6 +17,10 @@ export const protect = async (req, res, next) => {
   else if (req.cookies.token) {
     token = req.cookies.token;
   }
+  // Verificar se o token está no localStorage (enviado como header personalizado)
+  else if (req.headers['x-auth-token']) {
+    token = req.headers['x-auth-token'];
+  }
 
   // Verificar se o token existe
   if (!token) {
@@ -51,6 +55,15 @@ export const protect = async (req, res, next) => {
 
     next();
   } catch (error) {
+    // Verificar se o erro é de token expirado
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Token inválido',
+        error: 'jwt expired'
+      });
+    }
+    
     return res.status(401).json({
       success: false,
       message: 'Não autorizado para acessar esta rota'

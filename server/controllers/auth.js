@@ -252,4 +252,13 @@ export const refreshToken = async (req, res) => {
       message: 'Token de atualização inválido'
     });
   }
+};
+
+// Função para gerar token JWT
+export const generateToken = (userId) => {
+  return jwt.sign(
+    { id: userId },
+    process.env.JWT_SECRET || 'secret_key',
+    { expiresIn: process.env.JWT_EXPIRE || '1h' }
+  );
 }; 

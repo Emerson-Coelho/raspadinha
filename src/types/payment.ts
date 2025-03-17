@@ -15,6 +15,14 @@ export interface GatewayUsageConfig {
 }
 
 /**
+ * Interface para os métodos de pagamento suportados pelo gateway
+ */
+export interface GatewayPaymentMethods {
+  allowPix: boolean;
+  allowCard: boolean;
+}
+
+/**
  * Interface para o gateway de pagamento
  */
 export interface PaymentGateway {
@@ -25,6 +33,7 @@ export interface PaymentGateway {
   isActive: boolean;
   apiKeys: GatewayApiKeys;
   usageConfig: GatewayUsageConfig;
+  paymentMethods: GatewayPaymentMethods;
 }
 
 /**

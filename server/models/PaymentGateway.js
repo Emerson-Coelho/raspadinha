@@ -61,6 +61,14 @@ const PaymentGateway = sequelize.define('PaymentGateway', {
   forWithdraw: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
+  },
+  allowPix: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  },
+  allowCard: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
   }
 }, {
   timestamps: true,
@@ -85,6 +93,10 @@ PaymentGateway.prototype.toJSON = function() {
     usageConfig: {
       forDeposit: values.forDeposit,
       forWithdraw: values.forWithdraw
+    },
+    paymentMethods: {
+      allowPix: values.allowPix,
+      allowCard: values.allowCard
     },
     createdAt: values.createdAt,
     updatedAt: values.updatedAt

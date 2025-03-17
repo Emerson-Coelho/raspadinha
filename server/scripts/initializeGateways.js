@@ -22,11 +22,22 @@ export async function initializeGateways() {
         publicKey: '',
         secretKey: '',
         forDeposit: true,
-        forWithdraw: true
+        forWithdraw: true,
+        allowPix: true,
+        allowCard: true
       });
       console.log('Gateway UnifyPay criado com sucesso!');
     } else {
       console.log('Gateway UnifyPay já existe.');
+      
+      // Verificar se os novos campos existem, se não, atualizar
+      if (unifyPay.allowPix === undefined || unifyPay.allowCard === undefined) {
+        await unifyPay.update({
+          allowPix: true,
+          allowCard: true
+        });
+        console.log('Gateway UnifyPay atualizado com novos campos.');
+      }
     }
     
     // Aqui você pode adicionar mais gateways no futuro

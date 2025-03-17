@@ -3,6 +3,9 @@ import { ref, computed } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
 
+// URL base da API
+const API_URL = import.meta.env.VITE_API_URL || '/api';
+
 // Criar uma instância separada do Axios para usuários jogadores
 const userAxios = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
@@ -202,6 +205,58 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('token');
   }
 
+  // Função para renovar o token
+  async function refreshToken() {
+    try {
+      const response = await axios.post(`${API_URL}/auth/refresh-token`, {}, {
+        withCredentials: true
+      });
+      
+      if (response.data.success) {
+        const newToken = response.data.token;
+        token.value = newToken;
+        localStorage.setItem('token', newToken);
+        return newToken;
+      } else {
+        throw new Error('Falha ao renovar o token');
+      }
+    } catch (err) {
+      console.error('Erro ao renovar token:', err);
+      logout();
+      return null;
+    }
+  }
+
+  // Verificar se o token está expirado
+  function isTokenExpired(token: string): boolean {
+    if (!token) return true;
+    
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const expiryTime = payload.exp * 1000; // Converter para milissegundos
+      return Date.now() >= expiryTime;
+    } catch (e) {
+      console.error('Erro ao verificar expiração do token:', e);
+      return true;
+    }
+  }
+
+  // Obter token válido (renovar se necessário)
+  async function getValidToken(): Promise<string | null> {
+    const currentToken = token.value || localStorage.getItem('token');
+    
+    if (!currentToken) {
+      return null;
+    }
+    
+    if (isTokenExpired(currentToken)) {
+      console.log('Token expirado, tentando renovar...');
+      return await refreshToken();
+    }
+    
+    return currentToken;
+  }
+
   return {
     user,
     token,
@@ -213,6 +268,9 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     register,
     fetchUserProfile,
-    logout
+    logout,
+    refreshToken,
+    isTokenExpired,
+    getValidToken
   };
 }); 

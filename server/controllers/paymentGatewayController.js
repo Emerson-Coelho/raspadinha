@@ -48,7 +48,7 @@ export const updatePaymentGateway = asyncHandler(async (req, res, next) => {
   }
   
   // Extrair dados do corpo da requisição
-  const { apiKeys, usageConfig, isActive } = req.body;
+  const { apiKeys, usageConfig, isActive, paymentMethods } = req.body;
   
   // Preparar dados para atualização
   const updateData = {};
@@ -70,6 +70,16 @@ export const updatePaymentGateway = asyncHandler(async (req, res, next) => {
     }
     if (usageConfig.forWithdraw !== undefined) {
       updateData.forWithdraw = usageConfig.forWithdraw;
+    }
+  }
+  
+  // Atualizar métodos de pagamento se fornecidos
+  if (paymentMethods) {
+    if (paymentMethods.allowPix !== undefined) {
+      updateData.allowPix = paymentMethods.allowPix;
+    }
+    if (paymentMethods.allowCard !== undefined) {
+      updateData.allowCard = paymentMethods.allowCard;
     }
   }
   
@@ -110,7 +120,9 @@ export const initializePaymentGateways = asyncHandler(async (req, res, next) => 
       publicKey: '',
       secretKey: '',
       forDeposit: true,
-      forWithdraw: true
+      forWithdraw: true,
+      allowPix: true,
+      allowCard: true
     });
   }
   

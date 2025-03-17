@@ -22,7 +22,9 @@ const isAuthRoute = computed(() => {
 });
 
 onMounted(async () => {
+  console.log('Inicializando App.vue');
   await authStore.initialize();
+  console.log('Token após inicialização:', authStore.token);
   await adminStore.initialize();
 });
 </script>

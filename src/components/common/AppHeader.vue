@@ -9,8 +9,8 @@ const router = useRouter();
 const authStore = useAuthStore();
 
 const isAuthenticated = computed(() => authStore.isAuthenticated);
-const isAdmin = computed(() => authStore.isAdmin);
 const user = computed(() => authStore.user);
+const isAdmin = computed(() => user.value?.role === 'vip');
 
 function navigateTo(path: string) {
   router.push(path);
@@ -48,7 +48,7 @@ async function handleLogout() {
       <div class="flex items-center space-x-4">
         <template v-if="isAuthenticated">
           <div class="hidden md:flex items-center space-x-4">
-            <UserBalance :showDepositButton="true" size="small" />
+            <UserBalance :showDepositButton="true" :showWithdrawButton="true" size="small" />
           </div>
           
           <ElDropdown trigger="click">

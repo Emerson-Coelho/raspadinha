@@ -5,11 +5,13 @@ import { useRouter } from 'vue-router';
 
 interface UserBalanceProps {
   showDepositButton?: boolean;
+  showWithdrawButton?: boolean;
   size?: 'small' | 'medium' | 'large';
 }
 
 const props = withDefaults(defineProps<UserBalanceProps>(), {
   showDepositButton: false,
+  showWithdrawButton: false,
   size: 'medium'
 });
 
@@ -39,6 +41,10 @@ function formatCurrency(value: number) {
 function navigateToDeposit() {
   router.push('/deposit');
 }
+
+function navigateToWithdraw() {
+  router.push('/withdraw');
+}
 </script>
 
 <template>
@@ -50,13 +56,23 @@ function navigateToDeposit() {
       </span>
     </div>
     
-    <button 
-      v-if="showDepositButton" 
-      @click="navigateToDeposit"
-      class="btn-primary text-sm py-1 px-3"
-    >
-      Depositar
-    </button>
+    <div v-if="showDepositButton || showWithdrawButton" class="flex gap-2">
+      <button 
+        v-if="showDepositButton" 
+        @click="navigateToDeposit"
+        class="btn-primary text-sm py-1 px-3"
+      >
+        Depositar
+      </button>
+      
+      <button 
+        v-if="showWithdrawButton" 
+        @click="navigateToWithdraw"
+        class="btn-outline text-sm py-1 px-3"
+      >
+        Sacar
+      </button>
+    </div>
   </div>
 </template>
 

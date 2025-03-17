@@ -152,9 +152,15 @@ router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
   const adminStore = useAdminStore();
   
+  console.log('Router beforeEach - Rota:', to.path);
+  console.log('Router beforeEach - isAuthenticated:', authStore.isAuthenticated);
+  console.log('Router beforeEach - Token antes da inicialização:', authStore.token);
+  
   // Inicializar stores se necessário
   if (!authStore.isAuthenticated) {
     await authStore.initialize();
+    console.log('Router beforeEach - Token após inicialização:', authStore.token);
+    console.log('Router beforeEach - isAuthenticated após inicialização:', authStore.isAuthenticated);
   }
   
   if (!adminStore.isAdminAuthenticated) {

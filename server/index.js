@@ -34,6 +34,7 @@ import adminRoutes from './routes/adminRoutes.js';
 import scratchCardRoutes from './routes/scratch-card.js';
 import luckyNumberRoutes from './routes/lucky-number.js';
 import paymentGatewayRoutes from './routes/paymentGatewayRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
 
 // Função principal para iniciar o servidor
 async function startServer() {
@@ -46,12 +47,19 @@ async function startServer() {
   app.use(cookieParser());
   app.use(cors({
     origin: process.env.CLIENT_URL || 'http://localhost:5173',
-    credentials: true
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Auth-Token']
   }));
 
   // Logging em desenvolvimento
   if (process.env.NODE_ENV === 'development') {
     app.use(morgan('dev'));
+    
+    // Middleware de debug para verificar headers
+    app.use((req, res, next) => {
+      console.log('Headers da requisição:', req.headers);
+      next();
+    });
   }
 
   // Sincronizar modelos com o banco de dados
@@ -76,6 +84,7 @@ async function startServer() {
   app.use('/api/scratch-cards', scratchCardRoutes);
   app.use('/api/lucky-draws', luckyNumberRoutes);
   app.use('/api/admin/payment-gateways', paymentGatewayRoutes);
+  app.use('/api/payment-gateways', paymentRoutes);
 
   // Middleware de tratamento de erros
   app.use(errorHandler);
