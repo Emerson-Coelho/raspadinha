@@ -128,13 +128,34 @@ export const initializePaymentGateways = asyncHandler(async (req, res, next) => 
       description: 'Processador de pagamentos para depósitos e saques via PIX e cartão.',
       logo: '/images/gateways/unifypay.png',
       isActive: false,
-      apiEndpoint: 'https://api.unifypay.co',
+      apiEndpoint: 'https://app.unifypay.co',
       publicKey: '',
       secretKey: '',
       forDeposit: true,
       forWithdraw: true,
       allowPix: true,
       allowCard: true
+    });
+  }
+  
+  // Verificar se o gateway BSPay já existe
+  let bspay = await PaymentGateway.findByPk('bspay');
+  
+  // Se não existir, criar
+  if (!bspay) {
+    bspay = await PaymentGateway.create({
+      id: 'bspay',
+      name: 'BSPay',
+      description: 'Gateway de pagamento BSPay',
+      logo: '/images/gateways/bspay.png',
+      isActive: true,
+      apiEndpoint: 'https://api.bspay.co',
+      publicKey: '',
+      secretKey: '',
+      forDeposit: true,
+      forWithdraw: true,
+      allowPix: true,
+      allowCard: false
     });
   }
   
@@ -171,4 +192,62 @@ export const toggleGatewayActive = asyncHandler(async (req, res, next) => {
     success: true,
     data: updatedGateway
   });
+});
+
+/**
+ * @desc    Obter gateways de pagamento ativos para autenticação direta (para jogadores)
+ * @route   GET /api/payment-gateways/active-direct-auth
+ * @access  Privado (Usuário)
+ */
+export const getActiveDirectAuthGateways = asyncHandler(async (req, res, next) => {
+  try {
+    console.log('Buscando gateways ativos para jogadores...');
+    console.log('Usuário autenticado:', req.user.id, req.user.name);
+    
+    // Buscar gateways ativos
+    const gateways = await PaymentGateway.findAll({
+      where: {
+        isActive: true
+      }
+    });
+    
+    console.log(`Encontrados ${gateways.length} gateways ativos`);
+    
+    // Filtrar informações sensíveis antes de enviar para o cliente
+    const safeGateways = gateways.map(gateway => {
+      // Usar o método toJSON do modelo para obter o formato correto
+      const gatewayData = gateway.toJSON();
+      
+      // Remover chaves de API sensíveis
+      delete gatewayData.apiKeys.secretKey;
+      
+      return {
+        id: gatewayData.id,
+        name: gatewayData.name,
+        displayName: gatewayData.name,
+        description: gatewayData.description,
+        logoUrl: gatewayData.logo,
+        paymentMethods: gatewayData.paymentMethods,
+        usageConfig: gatewayData.usageConfig,
+        isActive: gatewayData.isActive,
+        minDeposit: 10, // Valores padrão
+        maxDeposit: 5000,
+        minWithdraw: 50,
+        maxWithdraw: 5000,
+        depositFee: 0,
+        withdrawFee: 0
+      };
+    });
+    
+    console.log('Enviando resposta com gateways filtrados');
+    
+    res.status(200).json({
+      success: true,
+      count: safeGateways.length,
+      gateways: safeGateways
+    });
+  } catch (error) {
+    console.error('Erro ao buscar gateways ativos:', error);
+    return next(error);
+  }
 }); 
