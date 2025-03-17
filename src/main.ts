@@ -7,8 +7,11 @@ import 'element-plus/dist/index.css'
 import './style.css'
 import axios from 'axios'
 
-// Configurar o Axios
-axios.defaults.baseURL = 'http://localhost:3000/api';
+// Configurar o Axios com a URL base da API
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+axios.defaults.baseURL = apiUrl.replace(/\/$/, ''); // Remove a barra final se existir
+
+console.log('Axios configurado com baseURL:', axios.defaults.baseURL);
 
 const app = createApp(App)
 const pinia = createPinia()

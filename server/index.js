@@ -27,6 +27,7 @@ import sequelize from './config/database.js';
 
 // Importar scripts de inicialização
 import { initializeGateways } from './scripts/initializeGateways.js';
+import { updateGatewayEndpoints } from './scripts/updateGateways.js';
 
 // Importar rotas
 import authRoutes from './routes/authRoutes.js';
@@ -78,8 +79,10 @@ async function startServer() {
     await sequelize.sync({ alter: true });
     console.log('Modelos sincronizados com o banco de dados');
     
-    // Inicializar dados
+    // Inicializar gateways apenas se não existirem
     await initializeGateways();
+    // Não atualizar automaticamente os endpoints - deve ser feito via script separado
+    // await updateGatewayEndpoints();
   } catch (err) {
     console.error('Erro ao sincronizar modelos:', err);
   }

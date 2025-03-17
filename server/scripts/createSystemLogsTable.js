@@ -61,7 +61,7 @@ async function createSystemLogsTable() {
           message: 'Request failed with status code 404',
           request: {
             method: 'POST',
-            url: 'https://api.unifypay.co/gateway/pix/receive'
+            url: 'https://app.unifypay.co/gateway/pix/receive'
           },
           response: {
             status: 404,
@@ -75,14 +75,14 @@ async function createSystemLogsTable() {
       {
         type: 'error',
         source: 'gateway_deposit',
-        message: 'Erro ao processar depósito via UnifyPay: getaddrinfo ENOTFOUND api.unifypay.co',
+        message: 'Erro ao processar depósito via UnifyPay: getaddrinfo ENOTFOUND app.unifypay.co',
         details: {
-          message: 'getaddrinfo ENOTFOUND api.unifypay.co',
+          message: 'getaddrinfo ENOTFOUND app.unifypay.co',
           code: 'ENOTFOUND',
-          stack: 'Error: getaddrinfo ENOTFOUND api.unifypay.co\n    at GetAddrInfoReqWrap.onlookup [as oncomplete] (node:dns:107:26)',
+          stack: 'Error: getaddrinfo ENOTFOUND app.unifypay.co\n    at GetAddrInfoReqWrap.onlookup [as oncomplete] (node:dns:107:26)',
           request: {
             method: 'POST',
-            url: 'https://api.unifypay.co/gateway/pix/receive',
+            url: 'https://app.unifypay.co/gateway/pix/receive',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': 'Bearer ********'
@@ -103,7 +103,7 @@ async function createSystemLogsTable() {
           message: 'Insufficient funds',
           request: {
             method: 'POST',
-            url: 'https://api.unifypay.co/gateway/pix/send'
+            url: 'https://app.unifypay.co/gateway/pix/send'
           },
           response: {
             status: 400,
@@ -123,7 +123,7 @@ async function createSystemLogsTable() {
           message: 'Invalid card information',
           request: {
             method: 'POST',
-            url: 'https://api.unifypay.co/gateway/card/receive'
+            url: 'https://app.unifypay.co/gateway/card/receive'
           },
           response: {
             status: 400,

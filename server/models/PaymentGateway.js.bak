@@ -1,5 +1,6 @@
 import { DataTypes } from 'sequelize';
 import sequelize from '../config/database.js';
+import { encrypt, decrypt } from '../utils/encryption.js';
 
 const PaymentGateway = sequelize.define('PaymentGateway', {
   id: {
@@ -32,20 +33,30 @@ const PaymentGateway = sequelize.define('PaymentGateway', {
     type: DataTypes.TEXT,
     allowNull: true,
     get() {
-      return this.getDataValue('publicKey');
+      const value = this.getDataValue('publicKey');
+      return value ? decrypt(value) : null;
     },
     set(value) {
-      this.setDataValue('publicKey', value);
+      if (value) {
+        this.setDataValue('publicKey', encrypt(value));
+      } else {
+        this.setDataValue('publicKey', null);
+      }
     }
   },
   secretKey: {
     type: DataTypes.TEXT,
     allowNull: true,
     get() {
-      return this.getDataValue('secretKey');
+      const value = this.getDataValue('secretKey');
+      return value ? decrypt(value) : null;
     },
     set(value) {
-      this.setDataValue('secretKey', value);
+      if (value) {
+        this.setDataValue('secretKey', encrypt(value));
+      } else {
+        this.setDataValue('secretKey', null);
+      }
     }
   },
   forDeposit: {

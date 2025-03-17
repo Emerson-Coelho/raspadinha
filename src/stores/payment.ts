@@ -4,8 +4,8 @@ import type { PaymentGateway } from '../types/payment';
 import axios from 'axios';
 import { useAdminStore } from './admin';
 
-// URL base da API
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+// URL base da API - remover a barra no final se existir
+const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api').replace(/\/$/, '');
 
 export const usePaymentStore = defineStore('payment', () => {
   // Estado
@@ -36,17 +36,21 @@ export const usePaymentStore = defineStore('payment', () => {
     };
   };
 
+  // Função para construir URLs da API corretamente
+  const buildApiUrl = (path: string) => {
+    // Garantir que o path comece com '/'
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    return `${API_URL}${normalizedPath}`;
+  };
+
   // Ações
   async function fetchGateways() {
     isLoading.value = true;
     error.value = null;
     
     try {
-      // Inicializar gateways se necessário
-      await axios.post(`${API_URL}/admin/payment-gateways/initialize`, {}, getAuthConfig());
-      
-      // Buscar gateways
-      const response = await axios.get(`${API_URL}/admin/payment-gateways`, getAuthConfig());
+      // Buscar gateways diretamente sem inicializar
+      const response = await axios.get(buildApiUrl('/admin/payment-gateways'), getAuthConfig());
       
       if (response.data.success) {
         gateways.value = response.data.data;
@@ -68,7 +72,7 @@ export const usePaymentStore = defineStore('payment', () => {
     
     try {
       const response = await axios.put(
-        `${API_URL}/admin/payment-gateways/${gateway.id}`, 
+        buildApiUrl(`/admin/payment-gateways/${gateway.id}`), 
         gateway, 
         getAuthConfig()
       );
@@ -99,7 +103,7 @@ export const usePaymentStore = defineStore('payment', () => {
     
     try {
       const response = await axios.patch(
-        `${API_URL}/admin/payment-gateways/${gatewayId}/toggle-active`, 
+        buildApiUrl(`/admin/payment-gateways/${gatewayId}/toggle-active`), 
         {}, 
         getAuthConfig()
       );

@@ -29,13 +29,13 @@ async function addApiEndpointColumn() {
     
     // Adicionar a coluna apiEndpoint
     console.log(colors.yellow('Adicionando a coluna apiEndpoint à tabela payment_gateways...'));
-    await sequelize.query("ALTER TABLE payment_gateways ADD COLUMN \"apiEndpoint\" VARCHAR(255) DEFAULT 'https://api.unifypay.co'");
+    await sequelize.query("ALTER TABLE payment_gateways ADD COLUMN \"apiEndpoint\" VARCHAR(255) DEFAULT 'https://app.unifypay.co'");
     
     console.log(colors.green('Coluna apiEndpoint adicionada com sucesso!'));
     
     // Atualizar os registros existentes
     console.log(colors.yellow('Atualizando registros existentes...'));
-    await sequelize.query("UPDATE payment_gateways SET \"apiEndpoint\" = 'https://api.unifypay.co' WHERE \"apiEndpoint\" IS NULL");
+    await sequelize.query("UPDATE payment_gateways SET \"apiEndpoint\" = 'https://app.unifypay.co' WHERE \"apiEndpoint\" IS NULL");
     
     console.log(colors.green('Registros atualizados com sucesso!'));
     

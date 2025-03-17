@@ -5,12 +5,18 @@
   "type": "module",
   "scripts": {
     "dev:frontend": "vite",
-    "dev:backend": "NODE_ENV=development node --watch server/index.js",
+    "dev:backend": "node --watch server/index.js",
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview",
     "create-admin": "NODE_ENV=development node server/scripts/createSuperAdmin.js",
-    "create-test-user": "NODE_ENV=development node server/scripts/createTestUser.js"
+    "create-test-user": "NODE_ENV=development node server/scripts/createTestUser.js",
+    "update-gateways": "NODE_ENV=development node server/scripts/updateGateways.js",
+    "update-unifypay": "cross-env NODE_ENV=development node server/scripts/updateGateways.js --unifypay=https://app.unifypay.co",
+    "update-bspay": "cross-env NODE_ENV=development node server/scripts/updateGateways.js --bspay=https://app.bspay.co",
+    "update-unifypay-keys": "cross-env NODE_ENV=development node server/scripts/updateGateways.js --unifypay-public-key=SUA_CHAVE_PUBLICA_AQUI --unifypay-secret-key=SUA_CHAVE_SECRETA_AQUI",
+    "update-bspay-keys": "cross-env NODE_ENV=development node server/scripts/updateGateways.js --bspay-public-key=SUA_CHAVE_PUBLICA_AQUI --bspay-secret-key=SUA_CHAVE_SECRETA_AQUI",
+    "migrate-api-keys": "cross-env NODE_ENV=development node server/scripts/migrateApiKeys.js"
   },
   "dependencies": {
     "@headlessui/vue": "^1.7.23",
@@ -41,6 +47,7 @@
     "@vitejs/plugin-vue": "^5.2.1",
     "@vue/tsconfig": "^0.7.0",
     "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3",
     "typescript": "~5.7.2",
     "vite": "^6.2.0",
     "vue-tsc": "^2.2.4"

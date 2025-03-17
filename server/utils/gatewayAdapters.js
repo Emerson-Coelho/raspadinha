@@ -55,8 +55,15 @@ export const UnifyPayAdapter = {
       ? data.callbackUrl 
       : 'https://api.raspadinha.com.br/api/webhooks/unifypay/callback';
     
+    // Determinar se é customer ou client (compatibilidade com versões antigas)
+    const customerData = data.client || data.customer;
+    
+    if (!customerData) {
+      throw new Error('Dados do cliente não fornecidos');
+    }
+    
     // Formatar o documento removendo caracteres não numéricos
-    const documentFormatted = data.customer.document.replace(/[^0-9]/g, '');
+    const documentFormatted = customerData.document.replace(/[^0-9]/g, '');
     
     // Determinar o tipo de cliente com base no tamanho do documento
     // CPF = 11 dígitos, CNPJ = 14 dígitos
@@ -73,11 +80,11 @@ export const UnifyPayAdapter = {
         userId: data.metadata.userId
       },
       client: {
-        name: data.customer.name,
-        email: `${data.customer.email}x`,
+        name: customerData.name,
+        email: customerData.email,
         document: documentFormatted,
         type: clientType,
-        phone: data.customer.phone || '99999999999'
+        phone: customerData.phone || '99999999999'
       },
       paymentMethod: data.paymentMethod // Adicionar o método de pagamento
     };
@@ -131,11 +138,20 @@ export const UnifyPayAdapter = {
     return payload;
   },
   
-  // Formata os headers para requisições
+  // Formata os headers para requisições - MÉTODO LEGADO (será removido no futuro)
   getHeaders: (secretKey) => {
     return {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${secretKey}`
+    };
+  },
+  
+  // Formata os headers para requisições com chaves pública e privada
+  getApiHeaders: (publicKey, secretKey) => {
+    return {
+      'Content-Type': 'application/json',
+      'x-public-key': publicKey,
+      'x-secret-key': secretKey
     };
   },
   

@@ -282,7 +282,7 @@ onMounted(() => {
                     v-model="editingGateway.apiEndpoint" 
                     type="text" 
                     class="w-full bg-gray-900 border border-gray-700 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    placeholder="https://api.unifypay.co"
+                    placeholder="https://app.unifypay.co"
                   />
                   <p class="mt-1 text-xs text-yellow-500">
                     <span class="font-bold">Atenção:</span> Alterar este valor pode causar falhas nas transações se o endpoint não estiver correto.
@@ -312,6 +312,13 @@ onMounted(() => {
                     class="w-full bg-gray-900 border border-gray-700 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                     placeholder="Chave secreta do gateway"
                   />
+                  <p class="mt-2 text-xs text-blue-400">
+                    <span class="font-bold">Nota:</span> As chaves de API são armazenadas em texto simples no banco de dados para facilitar a integração. 
+                    Certifique-se de utilizar chaves válidas para o ambiente de produção.
+                  </p>
+                  <p class="mt-1 text-xs text-gray-400">
+                    Para o UnifyPay, as chaves são utilizadas como cabeçalhos <code>x-public-key</code> e <code>x-secret-key</code> nas requisições.
+                  </p>
                 </div>
               </div>
             </div>

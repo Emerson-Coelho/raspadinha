@@ -3,14 +3,21 @@ import { ref, computed } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
 
-// URL base da API
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+// URL base da API - remover a barra no final se existir
+const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api').replace(/\/$/, '');
 
 // Criar uma instância separada do Axios para usuários jogadores
 const userAxios = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
+  baseURL: API_URL,
   withCredentials: true // Habilitar cookies para o token de atualização
 });
+
+// Função para construir URLs da API corretamente
+const buildApiUrl = (path: string) => {
+  // Garantir que o path comece com '/'
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return `${API_URL}${normalizedPath}`;
+};
 
 interface User {
   id: string;

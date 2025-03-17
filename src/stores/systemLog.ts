@@ -4,8 +4,8 @@ import type { SystemLog, LogFilters, LogStats, PaginatedResponse, Pagination } f
 import axios from 'axios';
 import { useAdminStore } from './admin';
 
-// URL base da API
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+// URL base da API - remover a barra no final se existir
+const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api').replace(/\/$/, '');
 
 export const useSystemLogStore = defineStore('systemLog', () => {
   // Estado
@@ -42,6 +42,13 @@ export const useSystemLogStore = defineStore('systemLog', () => {
         Authorization: `Bearer ${adminStore.adminToken}`
       }
     };
+  };
+
+  // Função para construir URLs da API corretamente
+  const buildApiUrl = (path: string) => {
+    // Garantir que o path comece com '/'
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    return `${API_URL}${normalizedPath}`;
   };
 
   // Ações
@@ -87,7 +94,7 @@ export const useSystemLogStore = defineStore('systemLog', () => {
       
       // Fazer a requisição
       const response = await axios.get<PaginatedResponse<SystemLog>>(
-        `${API_URL}/admin/logs?${params.toString()}`,
+        buildApiUrl(`/admin/logs?${params.toString()}`),
         getAuthConfig()
       );
       
@@ -113,20 +120,20 @@ export const useSystemLogStore = defineStore('systemLog', () => {
     
     try {
       const response = await axios.get<{ success: boolean, data: SystemLog }>(
-        `${API_URL}/admin/logs/${id}`,
+        buildApiUrl(`/admin/logs/${id}`),
         getAuthConfig()
       );
       
       if (response.data.success) {
         currentLog.value = response.data.data;
       } else {
-        throw new Error('Falha ao buscar log');
+        throw new Error('Falha ao buscar detalhes do log');
       }
       
       isLoading.value = false;
     } catch (err) {
-      console.error('Erro ao buscar log:', err);
-      error.value = 'Não foi possível carregar o log.';
+      console.error('Erro ao buscar detalhes do log:', err);
+      error.value = 'Não foi possível carregar os detalhes do log.';
       isLoading.value = false;
     }
   }
@@ -137,7 +144,7 @@ export const useSystemLogStore = defineStore('systemLog', () => {
     
     try {
       const response = await axios.patch<{ success: boolean, data: SystemLog }>(
-        `${API_URL}/admin/logs/${id}/resolve`,
+        buildApiUrl(`/admin/logs/${id}/resolve`),
         { notes },
         getAuthConfig()
       );
@@ -173,7 +180,7 @@ export const useSystemLogStore = defineStore('systemLog', () => {
     
     try {
       const response = await axios.get<{ success: boolean, data: LogStats }>(
-        `${API_URL}/admin/logs/stats`,
+        buildApiUrl('/admin/logs/stats'),
         getAuthConfig()
       );
       
@@ -197,7 +204,7 @@ export const useSystemLogStore = defineStore('systemLog', () => {
     
     try {
       const response = await axios.delete<{ success: boolean, message: string }>(
-        `${API_URL}/admin/logs/cleanup`,
+        buildApiUrl('/admin/logs/cleanup'),
         getAuthConfig()
       );
       

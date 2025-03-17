@@ -149,7 +149,7 @@ export const initializePaymentGateways = asyncHandler(async (req, res, next) => 
       description: 'Gateway de pagamento BSPay',
       logo: '/images/gateways/bspay.png',
       isActive: true,
-      apiEndpoint: 'https://api.bspay.co',
+      apiEndpoint: 'https://app.bspay.co',
       publicKey: '',
       secretKey: '',
       forDeposit: true,

@@ -5,6 +5,26 @@ import sequelize from '../config/database.js';
 import { decrypt } from '../utils/encryption.js';
 import crypto from 'crypto';
 
+/**
+ * Função para buscar o gateway mais recente do banco de dados
+ * Isso garante que sempre tenhamos as chaves mais atualizadas
+ * @param {string} gatewayId - ID do gateway a ser buscado
+ * @returns {Promise<Object>} - Gateway atualizado
+ */
+async function getLatestGateway(gatewayId) {
+  // Buscar sempre o gateway mais recente no banco de dados
+  // Isso evita problemas com cache e garante que as chaves estão atualizadas
+  const gateway = await PaymentGateway.findByPk(gatewayId, {
+    raw: false // Importante: não usar raw para permitir que os getters funcionem corretamente
+  });
+  
+  if (!gateway) {
+    throw new Error(`Gateway de pagamento ${gatewayId} não encontrado`);
+  }
+  
+  return gateway;
+}
+
 // @desc    Processar callback do UnifyPay
 // @route   POST /api/webhooks/unifypay/callback
 // @access  Public
@@ -38,22 +58,30 @@ export const unifypayCallback = async (req, res) => {
       });
     }
     
-    // Buscar o gateway para verificar a assinatura
-    const gateway = await PaymentGateway.findByPk(transaction.gatewayId);
-    
-    if (!gateway) {
+    // Buscar o gateway SEMPRE do banco de dados para ter as chaves mais recentes
+    let gateway;
+    try {
+      gateway = await getLatestGateway(transaction.gatewayId);
+      console.log(`Gateway ${gateway.id} carregado diretamente do banco de dados para webhook`);
+    } catch (error) {
       return res.status(404).json({
         success: false,
         message: 'Gateway de pagamento não encontrado.'
       });
     }
     
-    // Descriptografar as chaves de API
-    const apiKeys = JSON.parse(decrypt(gateway.apiKeys));
+    // Verificar se existe chave secreta para assinar o webhook
+    const secretKey = gateway.secretKey;
+    if (!secretKey) {
+      return res.status(401).json({
+        success: false,
+        message: 'Gateway não possui chave de assinatura configurada.'
+      });
+    }
     
     // Verificar a assinatura do webhook
     const expectedSignature = crypto
-      .createHmac('sha256', apiKeys.webhookSecret)
+      .createHmac('sha256', secretKey)
       .update(payload)
       .digest('hex');
     

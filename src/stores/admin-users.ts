@@ -3,10 +3,20 @@ import { ref, computed } from 'vue';
 import axios from 'axios';
 import { useAdminStore } from './admin';
 
+// URL base da API - remover a barra no final se existir
+const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api').replace(/\/$/, '');
+
 // Criar uma instância separada do Axios para administração
 const adminAxios = axios.create({
-  baseURL: 'http://localhost:3000/api'
+  baseURL: API_URL
 });
+
+// Função para construir URLs da API corretamente
+const buildApiUrl = (path: string) => {
+  // Garantir que o path comece com '/'
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return `${API_URL}${normalizedPath}`;
+};
 
 interface User {
   id: string;

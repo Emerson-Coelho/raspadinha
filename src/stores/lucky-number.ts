@@ -3,6 +3,16 @@ import { ref, computed } from 'vue';
 import axios from 'axios';
 import { useAuthStore } from './auth';
 
+// URL base da API - remover a barra no final se existir
+const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api').replace(/\/$/, '');
+
+// Função para construir URLs da API corretamente
+const buildApiUrl = (path: string) => {
+  // Garantir que o path comece com '/'
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return `${API_URL}${normalizedPath}`;
+};
+
 interface LuckyDraw {
   id: string;
   name: string;
@@ -59,7 +69,7 @@ export const useLuckyNumberStore = defineStore('lucky-number', () => {
     error.value = null;
     
     try {
-      const response = await axios.get('/lucky-draws');
+      const response = await axios.get(buildApiUrl('/lucky-draws'));
       availableDraws.value = response.data.draws;
     } catch (err) {
       if (axios.isAxiosError(err) && err.response) {
@@ -86,7 +96,7 @@ export const useLuckyNumberStore = defineStore('lucky-number', () => {
         headers: { Authorization: `Bearer ${authStore.token}` }
       };
       
-      const response = await axios.get('/lucky-draws/user-numbers', config);
+      const response = await axios.get(buildApiUrl('/lucky-draws/user-numbers'), config);
       userNumbers.value = response.data.numbers;
     } catch (err) {
       if (axios.isAxiosError(err) && err.response) {
@@ -104,7 +114,7 @@ export const useLuckyNumberStore = defineStore('lucky-number', () => {
     error.value = null;
     
     try {
-      const response = await axios.get('/lucky-draws/results');
+      const response = await axios.get(buildApiUrl('/lucky-draws/results'));
       drawResults.value = response.data.results;
     } catch (err) {
       if (axios.isAxiosError(err) && err.response) {
@@ -132,7 +142,7 @@ export const useLuckyNumberStore = defineStore('lucky-number', () => {
         headers: { Authorization: `Bearer ${authStore.token}` }
       };
       
-      const response = await axios.post('/lucky-draws/buy', { drawId, number }, config);
+      const response = await axios.post(buildApiUrl('/lucky-draws/buy'), { drawId, number }, config);
       
       // Encontrar o sorteio
       const selectedDraw = availableDraws.value.find(draw => draw.id === drawId);

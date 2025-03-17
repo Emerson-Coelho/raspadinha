@@ -5,9 +5,27 @@ import User from '../models/User.js';
 import Transaction from '../models/Transaction.js';
 import { decrypt } from '../utils/encryption.js';
 import Logger from '../utils/logger.js';
+import { UnifyPayAdapter } from '../utils/gatewayAdapters.js';
 
-// URL base padrão da API do UnifyPay (será substituída pelo valor do gateway)
-const DEFAULT_UNIFYPAY_API_URL = 'https://api.unifypay.co';
+/**
+ * Função para buscar o gateway mais recente do banco de dados
+ * Isso garante que sempre tenhamos as chaves mais atualizadas
+ * @param {string} gatewayId - ID do gateway a ser buscado
+ * @returns {Promise<Object>} - Gateway atualizado
+ */
+async function getLatestGateway(gatewayId) {
+  // Buscar sempre o gateway mais recente no banco de dados
+  // Isso evita problemas com cache e garante que as chaves estão atualizadas
+  const gateway = await PaymentGateway.findByPk(gatewayId, {
+    raw: false // Importante: não usar raw para permitir que os getters funcionem corretamente
+  });
+  
+  if (!gateway) {
+    throw new Error(`Gateway de pagamento ${gatewayId} não encontrado`);
+  }
+  
+  return gateway;
+}
 
 // @desc    Criar uma transação de depósito
 // @route   POST /api/transactions/deposit
@@ -35,10 +53,11 @@ export const createDeposit = async (req, res) => {
       });
     }
     
-    // Buscar o gateway de pagamento
-    const gateway = await PaymentGateway.findByPk(gatewayId);
-    
-    if (!gateway) {
+    // Buscar o gateway SEMPRE do banco de dados para ter as chaves mais recentes
+    let gateway;
+    try {
+      gateway = await getLatestGateway(gatewayId);
+    } catch (error) {
       return res.status(404).json({
         success: false,
         message: 'Gateway de pagamento não encontrado.'
@@ -49,6 +68,14 @@ export const createDeposit = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Este gateway de pagamento está inativo.'
+      });
+    }
+    
+    // Verificar se o endpoint da API está configurado
+    if (!gateway.apiEndpoint) {
+      return res.status(400).json({
+        success: false,
+        message: 'Gateway não configurado corretamente. Endpoint da API não definido.'
       });
     }
     
@@ -89,44 +116,57 @@ export const createDeposit = async (req, res) => {
         }
       }, { transaction: dbTransaction });
       
-      // Obter o endpoint da API configurado no gateway ou usar o padrão
-      const apiEndpoint = gateway.apiEndpoint || DEFAULT_UNIFYPAY_API_URL;
-      
       // Preparar dados para a API do UnifyPay
-      const payload = {
+      const payloadData = {
         amount,
         currency: 'BRL',
-        callbackUrl: `${process.env.API_URL}/api/webhooks/unifypay/callback`,
+        identifier: `tx_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+        callbackUrl: `${process.env.API_URL || 'http://localhost:3000'}/api/webhooks/unifypay/callback`,
         metadata: {
           transactionId: transaction.id,
           userId: req.user.id
         },
-        customer: {
+        client: {
           name: req.user.name,
           email: req.user.email,
-          document: req.user.cpf
-        }
+          document: req.user.cpf.replace(/[^\d]/g, ''),
+          phone: req.user.phone || '99999999999'
+        },
+        paymentMethod
       };
       
-      // Determinar a rota correta com base no método de pagamento
-      let apiRoute;
-      if (paymentMethod === 'pix') {
-        apiRoute = `${apiEndpoint}/gateway/pix/receive`;
-      } else if (paymentMethod === 'card') {
-        apiRoute = `${apiEndpoint}/gateway/card/receive`;
-      } else {
-        throw new Error(`Método de pagamento não suportado: ${paymentMethod}`);
+      // Formatar o payload usando o adaptador
+      const payload = UnifyPayAdapter.formatDepositPayload(payloadData);
+      
+      // Usar o adaptador para determinar a rota correta
+      const apiRoute = UnifyPayAdapter.getDepositRoute(gateway.apiEndpoint, paymentMethod);
+      
+      console.log('Enviando requisição para UnifyPay:', {
+        url: apiRoute,
+        payload: { ...payload, client: { ...payload.client, document: '********' } }
+      });
+      
+      // Obter as chaves mais recentes diretamente do modelo
+      // Isso garante que usamos os valores descriptografados mais atuais
+      const publicKey = gateway.publicKey;
+      const secretKey = gateway.secretKey;
+      
+      // Verificar se as chaves públicas e privadas estão configuradas
+      if (!publicKey || !secretKey) {
+        return res.status(400).json({
+          success: false,
+          message: 'Gateway não configurado corretamente. Chaves de API não definidas.'
+        });
       }
+      
+      console.log(`Usando chaves do gateway ${gateway.id} carregadas diretamente do banco de dados`);
       
       // Chamar a API do UnifyPay com o endpoint configurado
       const unifypayResponse = await axios.post(
         apiRoute,
         payload,
         {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${gateway.secretKey}`
-          }
+          headers: UnifyPayAdapter.getApiHeaders(publicKey, secretKey)
         }
       );
       
@@ -178,15 +218,11 @@ export const createDeposit = async (req, res) => {
       // Reverter a transação de banco de dados em caso de erro
       await dbTransaction.rollback();
       
-      // Determinar a URL da API com base no método de pagamento
-      let apiUrl;
-      if (paymentMethod === 'pix') {
-        apiUrl = `${gateway.apiEndpoint || DEFAULT_UNIFYPAY_API_URL}/gateway/pix/receive`;
-      } else if (paymentMethod === 'card') {
-        apiUrl = `${gateway.apiEndpoint || DEFAULT_UNIFYPAY_API_URL}/gateway/card/receive`;
-      } else {
-        apiUrl = `${gateway.apiEndpoint || DEFAULT_UNIFYPAY_API_URL}/transactions`;
-      }
+      // Usar o adaptador para determinar a URL da API
+      const apiUrl = UnifyPayAdapter.getDepositRoute(
+        gateway.apiEndpoint, 
+        paymentMethod
+      );
       
       // Registrar log detalhado do erro
       const errorDetails = {
@@ -198,7 +234,8 @@ export const createDeposit = async (req, res) => {
           url: apiUrl,
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer ********' // Ocultar a chave por segurança
+            'x-public-key': '********', // Ocultar a chave por segurança
+            'x-secret-key': '********'  // Ocultar a chave por segurança
           },
           data: {
             amount,
@@ -207,10 +244,11 @@ export const createDeposit = async (req, res) => {
             metadata: {
               userId: req.user.id
             },
-            customer: {
+            client: {
               name: req.user.name,
               email: req.user.email,
-              document: req.user.cpf
+              document: req.user.cpf.replace(/[^\d]/g, ''),
+              phone: req.user.phone || '99999999999'
             }
           }
         }
@@ -280,10 +318,11 @@ export const createWithdraw = async (req, res) => {
       });
     }
     
-    // Buscar o gateway de pagamento
-    const gateway = await PaymentGateway.findByPk(gatewayId);
-    
-    if (!gateway) {
+    // Buscar o gateway SEMPRE do banco de dados para ter as chaves mais recentes
+    let gateway;
+    try {
+      gateway = await getLatestGateway(gatewayId);
+    } catch (error) {
       return res.status(404).json({
         success: false,
         message: 'Gateway de pagamento não encontrado.'
@@ -316,11 +355,15 @@ export const createWithdraw = async (req, res) => {
       });
     }
     
+    // Obter as chaves mais recentes diretamente do modelo
+    const publicKey = gateway.publicKey;
+    const secretKey = gateway.secretKey;
+    
     // Verificar se a chave secreta está configurada
-    if (!gateway.secretKey) {
+    if (!publicKey || !secretKey) {
       return res.status(400).json({
         success: false,
-        message: 'Gateway não configurado corretamente. Chave secreta não definida.'
+        message: 'Gateway não configurado corretamente. Chaves de API não definidas.'
       });
     }
     
@@ -361,8 +404,18 @@ export const createWithdraw = async (req, res) => {
         }
       }, { transaction: dbTransaction });
       
-      // Obter o endpoint da API configurado no gateway ou usar o padrão
-      const apiEndpoint = gateway.apiEndpoint || DEFAULT_UNIFYPAY_API_URL;
+      // Obter o endpoint da API configurado no gateway
+      const apiEndpoint = gateway.apiEndpoint;
+      
+      // Verificar se o endpoint da API está configurado
+      if (!apiEndpoint) {
+        return res.status(400).json({
+          success: false,
+          message: 'Gateway não configurado corretamente. Endpoint da API não definido.'
+        });
+      }
+      
+      console.log(`Usando chaves do gateway ${gateway.id} carregadas diretamente do banco de dados`);
       
       // Preparar dados para a API do UnifyPay
       const payload = {
@@ -391,25 +444,15 @@ export const createWithdraw = async (req, res) => {
         };
       }
       
-      // Determinar a rota correta com base no método de pagamento
-      let apiRoute;
-      if (paymentMethod === 'pix') {
-        apiRoute = `${apiEndpoint}/gateway/pix/send`;
-      } else if (paymentMethod === 'card') {
-        apiRoute = `${apiEndpoint}/gateway/card/send`;
-      } else {
-        throw new Error(`Método de pagamento não suportado: ${paymentMethod}`);
-      }
+      // Usar o adaptador para determinar a rota correta
+      const apiRoute = UnifyPayAdapter.getWithdrawRoute(apiEndpoint, paymentMethod);
       
       // Chamar a API do UnifyPay
       const unifypayResponse = await axios.post(
         apiRoute,
         payload,
         {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${gateway.secretKey}`
-          }
+          headers: UnifyPayAdapter.getApiHeaders(publicKey, secretKey)
         }
       );
       
@@ -454,15 +497,11 @@ export const createWithdraw = async (req, res) => {
       // Reverter a transação de banco de dados em caso de erro
       await dbTransaction.rollback();
       
-      // Determinar a URL da API com base no método de pagamento
-      let apiUrl;
-      if (paymentMethod === 'pix') {
-        apiUrl = `${gateway.apiEndpoint || DEFAULT_UNIFYPAY_API_URL}/gateway/pix/send`;
-      } else if (paymentMethod === 'card') {
-        apiUrl = `${gateway.apiEndpoint || DEFAULT_UNIFYPAY_API_URL}/gateway/card/send`;
-      } else {
-        apiUrl = `${gateway.apiEndpoint || DEFAULT_UNIFYPAY_API_URL}/payouts`;
-      }
+      // Usar o adaptador para determinar a URL da API
+      const apiUrl = UnifyPayAdapter.getWithdrawRoute(
+        gateway.apiEndpoint, 
+        paymentMethod
+      );
       
       // Registrar log detalhado do erro
       const errorDetails = {
@@ -474,7 +513,8 @@ export const createWithdraw = async (req, res) => {
           url: apiUrl,
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer ********' // Ocultar a chave por segurança
+            'x-public-key': '********', // Ocultar a chave por segurança
+            'x-secret-key': '********'  // Ocultar a chave por segurança
           },
           data: {
             amount,
@@ -547,10 +587,11 @@ export const getTransactionStatus = async (req, res) => {
       });
     }
     
-    // Buscar o gateway de pagamento
-    const gateway = await PaymentGateway.findByPk(transaction.gatewayId);
-    
-    if (!gateway) {
+    // Buscar o gateway SEMPRE do banco de dados para ter as chaves mais recentes
+    let gateway;
+    try {
+      gateway = await getLatestGateway(transaction.gatewayId);
+    } catch (error) {
       return res.status(404).json({
         success: false,
         message: 'Gateway de pagamento não encontrado.'
@@ -567,51 +608,44 @@ export const getTransactionStatus = async (req, res) => {
     }
     
     try {
-      // Obter o endpoint da API configurado no gateway ou usar o padrão
-      const apiEndpoint = gateway.apiEndpoint || DEFAULT_UNIFYPAY_API_URL;
+      // Obter o endpoint da API configurado no gateway
+      const apiEndpoint = gateway.apiEndpoint;
       
-      // Determinar a rota correta com base no tipo e método de pagamento da transação
-      let apiRoute;
-      if (transaction.type === 'deposit') {
-        if (transaction.paymentMethod === 'pix') {
-          apiRoute = `${apiEndpoint}/gateway/pix/status/${transaction.gatewayTransactionId}`;
-        } else if (transaction.paymentMethod === 'card') {
-          apiRoute = `${apiEndpoint}/gateway/card/status/${transaction.gatewayTransactionId}`;
-        } else {
-          apiRoute = `${apiEndpoint}/transactions/${transaction.gatewayTransactionId}`;
-        }
-      } else if (transaction.type === 'withdraw') {
-        if (transaction.paymentMethod === 'pix') {
-          apiRoute = `${apiEndpoint}/gateway/pix/status/${transaction.gatewayTransactionId}`;
-        } else if (transaction.paymentMethod === 'card') {
-          apiRoute = `${apiEndpoint}/gateway/card/status/${transaction.gatewayTransactionId}`;
-        } else {
-          apiRoute = `${apiEndpoint}/payouts/${transaction.gatewayTransactionId}`;
-        }
-      } else {
-        apiRoute = `${apiEndpoint}/transactions/${transaction.gatewayTransactionId}`;
+      // Verificar se o endpoint da API está configurado
+      if (!apiEndpoint) {
+        return res.status(400).json({
+          success: false,
+          message: 'Gateway não configurado corretamente. Endpoint da API não definido.'
+        });
       }
+      
+      // Obter as chaves mais recentes diretamente do modelo
+      const publicKey = gateway.publicKey;
+      const secretKey = gateway.secretKey;
+      
+      // Verificar se as chaves públicas e privadas estão configuradas
+      if (!publicKey || !secretKey) {
+        return res.status(400).json({
+          success: false,
+          message: 'Gateway não configurado corretamente. Chaves de API não definidas.'
+        });
+      }
+      
+      console.log(`Usando chaves do gateway ${gateway.id} carregadas diretamente do banco de dados`);
+      
+      // Usar o adaptador para determinar a rota correta
+      const apiRoute = UnifyPayAdapter.getStatusRoute(apiEndpoint, transaction);
       
       // Verificar o status da transação na API do UnifyPay
       const unifypayResponse = await axios.get(
         apiRoute,
         {
-          headers: {
-            'Authorization': `Bearer ${gateway.secretKey}`
-          }
+          headers: UnifyPayAdapter.getApiHeaders(publicKey, secretKey)
         }
       );
       
       // Mapear o status do UnifyPay para o status interno
-      let newStatus = transaction.status;
-      
-      if (unifypayResponse.data.status === 'completed') {
-        newStatus = 'completed';
-      } else if (unifypayResponse.data.status === 'failed') {
-        newStatus = 'failed';
-      } else if (unifypayResponse.data.status === 'cancelled') {
-        newStatus = 'cancelled';
-      }
+      let newStatus = UnifyPayAdapter.mapStatus(unifypayResponse.data.status) || transaction.status;
       
       // Atualizar o status da transação se necessário
       if (newStatus !== transaction.status) {
