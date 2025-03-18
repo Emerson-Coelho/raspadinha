@@ -1,0 +1,152 @@
+<div class="container mx-auto px-4 py-8">
+  <!-- Banner Principal -->
+  <div class="relative bg-gray-800 rounded-lg overflow-hidden mb-10">
+    <div class="absolute inset-0 bg-gradient-to-r from-primary-900 to-transparent opacity-80"></div>
+    <div class="relative z-10 px-8 py-12 md:py-16 lg:py-20 max-w-2xl">
+      <h1 class="text-4xl md:text-5xl font-bold text-white mb-4">Raspadinha Online</h1>
+      <p class="text-xl text-white/90 mb-6">A melhor plataforma de raspadinhas online do Brasil! Jogue agora e ganhe prêmios instantâneos.</p>
+      <div class="space-x-4">
+        <a href="/games" class="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-full transition-all">
+          Jogar Agora
+        </a>
+        <a href="/register" ng-if="!isAuthenticated()" class="bg-white hover:bg-gray-100 text-primary-700 font-medium py-2 px-6 rounded-full transition-all">
+          Criar Conta
+        </a>
+      </div>
+    </div>
+    <div class="hidden md:block absolute right-0 bottom-0 w-1/2 h-full">
+      <img src="assets/img/banner-cards.png" alt="Raspadinhas" class="w-full h-full object-cover object-left">
+    </div>
+  </div>
+
+  <!-- Jogos em Destaque -->
+  <section class="mb-12">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold text-white">Jogos em Destaque</h2>
+      <a href="/games" class="text-primary-400 hover:text-primary-300">Ver todos</a>
+    </div>
+    
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <!-- Repetir para cada jogo em destaque -->
+      <div ng-repeat="game in vm.featuredGames" class="bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200">
+        <img ng-src="{{game.imageUrl}}" alt="{{game.name}}" class="w-full h-40 object-cover">
+        <div class="p-4">
+          <h3 class="text-lg font-semibold text-white mb-2">{{game.name}}</h3>
+          <p class="text-gray-300 text-sm mb-3">{{game.description | limitTo: 80}}{{game.description.length > 80 ? '...' : ''}}</p>
+          <div class="flex justify-between items-center">
+            <span class="text-primary-400 font-bold">R$ {{game.price.toFixed(2)}}</span>
+            <a href="/games/{{game.id}}" class="text-white bg-primary-600 hover:bg-primary-700 px-3 py-1 rounded-md text-sm">Jogar</a>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Cards para quando não tiver dados carregados ainda -->
+      <div ng-if="!vm.featuredGames || vm.featuredGames.length === 0" ng-repeat="i in [1,2,3,4]" class="bg-gray-800 rounded-lg overflow-hidden shadow-lg">
+        <div class="w-full h-40 bg-gray-700 animate-pulse"></div>
+        <div class="p-4">
+          <div class="h-6 bg-gray-700 rounded animate-pulse mb-2"></div>
+          <div class="h-4 bg-gray-700 rounded animate-pulse mb-1 w-3/4"></div>
+          <div class="h-4 bg-gray-700 rounded animate-pulse mb-3 w-1/2"></div>
+          <div class="flex justify-between items-center">
+            <div class="h-5 bg-gray-700 rounded animate-pulse w-1/4"></div>
+            <div class="h-8 bg-gray-700 rounded animate-pulse w-16"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Como Funciona -->
+  <section class="mb-12 bg-gray-800 rounded-lg p-6 md:p-8">
+    <h2 class="text-2xl font-bold text-white mb-6 text-center">Como Funciona</h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div class="text-center">
+        <div class="bg-primary-700 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+        </div>
+        <h3 class="text-lg font-semibold text-white mb-2">1. Crie sua conta</h3>
+        <p class="text-gray-300">Registre-se gratuitamente e ganhe bônus de boas-vindas.</p>
+      </div>
+      
+      <div class="text-center">
+        <div class="bg-primary-700 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <h3 class="text-lg font-semibold text-white mb-2">2. Deposite créditos</h3>
+        <p class="text-gray-300">Carregue sua conta com o valor desejado usando vários métodos de pagamento.</p>
+      </div>
+      
+      <div class="text-center">
+        <div class="bg-primary-700 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <h3 class="text-lg font-semibold text-white mb-2">3. Jogue e ganhe</h3>
+        <p class="text-gray-300">Escolha seus jogos favoritos, raspe e ganhe prêmios instantâneos!</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Promoções -->
+  <section class="mb-12">
+    <h2 class="text-2xl font-bold text-white mb-6">Promoções</h2>
+    
+    <div class="bg-gradient-to-r from-purple-900 to-indigo-800 rounded-lg p-6 md:p-8 shadow-lg">
+      <div class="md:flex items-center">
+        <div class="md:w-2/3 mb-6 md:mb-0">
+          <h3 class="text-xl md:text-2xl font-bold text-white mb-3">Oferta de Boas-vindas</h3>
+          <p class="text-white/90 text-lg mb-4">Registre-se agora e ganhe <span class="font-bold text-yellow-300">R$ 10,00</span> em créditos + 5 raspadinhas grátis!</p>
+          <a href="/register" ng-if="!isAuthenticated()" class="inline-block bg-white hover:bg-gray-100 text-purple-800 font-bold py-2 px-6 rounded-full shadow-md hover:shadow-lg transition-all">
+            Criar Conta e Receber
+          </a>
+        </div>
+        <div class="md:w-1/3 md:text-right">
+          <span class="bg-yellow-400 text-purple-900 text-xl md:text-3xl font-bold py-2 px-4 rounded-lg inline-block transform rotate-3 shadow-lg">
+            R$ 10 GRÁTIS!
+          </span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Métodos de Pagamento -->
+  <section class="mb-12">
+    <h2 class="text-2xl font-bold text-white mb-6 text-center">Métodos de Pagamento</h2>
+    
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 bg-gray-800 rounded-lg p-6">
+      <div class="bg-white/10 rounded-lg p-4 text-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto mb-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+        </svg>
+        <span class="text-gray-300 text-sm">Cartão de Crédito</span>
+      </div>
+      
+      <div class="bg-white/10 rounded-lg p-4 text-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto mb-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+        <span class="text-gray-300 text-sm">Pix</span>
+      </div>
+      
+      <div class="bg-white/10 rounded-lg p-4 text-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto mb-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z" />
+        </svg>
+        <span class="text-gray-300 text-sm">Boleto</span>
+      </div>
+      
+      <div class="bg-white/10 rounded-lg p-4 text-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto mb-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span class="text-gray-300 text-sm">Transferência</span>
+      </div>
+    </div>
+  </section>
+</div> 

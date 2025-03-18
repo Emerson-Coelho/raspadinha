@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR" ng-app="raspadinhaApp">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <base href="/">
+  <title>Raspadinha Online - A melhor plataforma de raspadinhas do Brasil</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" href="assets/img/favicon.ico">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Estilos personalizados -->
+  <link rel="stylesheet" href="assets/css/styles.css">
+  
+  <!-- Script de configuração do Tailwind CSS -->
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50: '#f0fdfa',
+              100: '#ccfbf1',
+              200: '#99f6e4',
+              300: '#5eead4',
+              400: '#2dd4bf',
+              500: '#14b8a6',
+              600: '#0d9488',
+              700: '#0f766e',
+              800: '#115e59',
+              900: '#134e4a',
+              950: '#042f2e',
+            },
+          },
+          spacing: {
+            '112': '28rem',
+            '128': '32rem',
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+  <!-- Sistema de Notificações -->
+  <notifications></notifications>
+  
+  <!-- Cabeçalho -->
+  <header ng-if="!$route.current.isAuthRoute" ng-include="'components/common/app-header.html'" class="fixed top-0 left-0 right-0 z-50"></header>
+  
+  <!-- Conteúdo principal -->
+  <main class="flex-grow pt-16" ng-class="{'mb-[60px] md:mb-0': !$route.current.isAuthRoute}">
+    <div ng-view></div>
+  </main>
+  
+  <!-- Rodapé -->
+  <footer ng-if="!$route.current.isAuthRoute" ng-include="'components/common/app-footer.html'"></footer>
+  
+  <!-- Barra de navegação mobile -->
+  <div ng-if="!$route.current.isAuthRoute" ng-include="'components/common/mobile-nav-bar.html'" class="md:hidden"></div>
+  
+  <!-- AngularJS -->
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular-route.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular-animate.min.js"></script>
+  
+  <!-- Confetti -->
+  <script src="node_modules/canvas-confetti/dist/confetti.browser.min.js"></script>
+  
+  <!-- Definição do módulo AngularJS - deve ser o primeiro arquivo da nossa aplicação -->
+  <script src="app-module.js"></script>
+
+  <!-- Configurações - deve ser carregado antes da aplicação principal -->
+  <script src="config/constants.js"></script>
+  
+  <!-- Aplicação principal -->
+  <script src="app.js"></script>
+  
+  <!-- Interceptores HTTP -->
+  <script src="services/http-interceptors.js"></script>
+  
+  <!-- Serviços -->
+  <script src="services/auth.service.js"></script>
+  <script src="services/admin.service.js"></script>
+  <script src="services/game.service.js"></script>
+  <script src="services/user.service.js"></script>
+  <script src="services/payment.service.js"></script>
+  <script src="services/notification.service.js"></script>
+  
+  <!-- Controladores -->
+  <script src="controllers/home.controller.js"></script>
+  <script src="controllers/login.controller.js"></script>
+  <script src="controllers/register.controller.js"></script>
+  <script src="controllers/game-detail.controller.js"></script>
+  <script src="controllers/game-list.controller.js"></script>
+  <script src="controllers/profile.controller.js"></script>
+  <script src="controllers/deposit.controller.js"></script>
+  <script src="controllers/withdraw.controller.js"></script>
+  
+  <!-- Diretivas -->
+  <script src="directives/loading-spinner.directive.js"></script>
+  <script src="directives/scratch-card.directive.js"></script>
+  <script src="directives/balance-display.directive.js"></script>
+  <script src="directives/game-card.directive.js"></script>
+  <script src="directives/notification.directive.js"></script>
+</body>
+</html> 

@@ -1,0 +1,138 @@
+<div 
+  class="game-card relative overflow-hidden rounded-lg transition-all duration-300"
+  ng-class="{
+    'hover:scale-102': !horizontal,
+    'h-48 max-w-xs': size === 'sm' && !horizontal,
+    'h-64 max-w-sm': (!size || size === 'md') && !horizontal,
+    'h-80 max-w-md': size === 'lg' && !horizontal,
+    'h-96 max-w-lg': size === 'xl' && !horizontal,
+    'flex flex-row h-32': horizontal
+  }">
+  
+  <!-- Imagem do jogo -->
+  <div 
+    class="relative overflow-hidden"
+    ng-class="{
+      'h-full w-full': !horizontal,
+      'h-full w-32 sm:w-48': horizontal
+    }">
+    <img 
+      ng-src="{{game.imageUrl || 'assets/img/game-placeholder.jpg'}}" 
+      alt="{{game.name}}"
+      class="h-full w-full object-cover transition-transform duration-500"
+      ng-class="{'hover:scale-110': !game.isNew && !game.isHot}">
+    
+    <!-- Badges -->
+    <div class="absolute top-2 left-2 flex flex-col space-y-2">
+      <span 
+        ng-if="game.isNew" 
+        class="bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded">
+        NOVO
+      </span>
+      <span 
+        ng-if="game.isHot" 
+        class="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded animate-pulse">
+        POPULAR
+      </span>
+      <span 
+        ng-if="game.discountPercentage > 0" 
+        class="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded">
+        {{game.discountPercentage}}% OFF
+      </span>
+    </div>
+    
+    <!-- Categoria -->
+    <div 
+      ng-if="game.category" 
+      class="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded">
+      {{game.category}}
+    </div>
+  </div>
+  
+  <!-- Conteúdo do card -->
+  <div 
+    class="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-gray-900 to-transparent"
+    ng-class="{
+      'h-1/2': !horizontal && (!showDetails || size === 'sm'),
+      'h-2/3': !horizontal && showDetails && (size === 'md' || size === 'lg' || size === 'xl'),
+      'relative h-full flex flex-col flex-grow p-4 bg-gray-800': horizontal
+    }">
+    
+    <!-- Nome e preço -->
+    <div class="flex justify-between items-start mb-2">
+      <h3 class="text-white font-bold truncate"
+          ng-class="{
+            'text-sm': size === 'sm',
+            'text-base': !size || size === 'md',
+            'text-lg': size === 'lg' || size === 'xl'
+          }">
+        {{game.name}}
+      </h3>
+      <div class="flex flex-col items-end">
+        <span 
+          ng-if="game.originalPrice > game.price" 
+          class="text-gray-400 line-through text-xs">
+          R${{formatPrice(game.originalPrice)}}
+        </span>
+        <span class="text-white font-bold"
+              ng-class="{
+                'text-sm': size === 'sm',
+                'text-base': !size || size === 'md',
+                'text-lg': size === 'lg' || size === 'xl'
+              }">
+          R${{formatPrice(game.price)}}
+        </span>
+      </div>
+    </div>
+    
+    <!-- Prêmios -->
+    <div class="flex items-center mb-2 text-sm text-white">
+      <span class="mr-2">Prêmio:</span>
+      <span class="font-bold">até R${{formatPrice(game.maxPrize)}}</span>
+    </div>
+    
+    <!-- Barra de probabilidade -->
+    <div ng-if="showDetails" class="mb-2">
+      <div class="flex justify-between text-xs text-gray-300 mb-1">
+        <span>Chance de Ganhar</span>
+        <span>{{formatProbability(game.winProbability)}}%</span>
+      </div>
+      <div class="h-1.5 bg-gray-700 rounded-full overflow-hidden">
+        <div 
+          class="h-full bg-primary-500" 
+          ng-style="{'width': getProbabilityWidth(game.winProbability)}">
+        </div>
+      </div>
+    </div>
+    
+    <!-- Estatísticas -->
+    <div 
+      ng-if="showDetails" 
+      class="grid grid-cols-2 gap-2 mb-3 text-xs text-gray-300">
+      <div>
+        <span class="block">Prêmios pagos</span>
+        <span class="font-bold text-white">{{game.totalPrizesPaid | currency:'R$'}}</span>
+      </div>
+      <div>
+        <span class="block">Jogos realizados</span>
+        <span class="font-bold text-white">{{game.totalPlays}}</span>
+      </div>
+    </div>
+    
+    <!-- Ações -->
+    <div class="mt-auto flex"
+         ng-class="{'justify-between': showDetails, 'justify-end': !showDetails}">
+      <a 
+        ng-if="showDetails" 
+        href="#!/jogos/{{game.id}}" 
+        class="text-xs text-primary-300 hover:text-primary-100 transition-colors">
+        Ver Detalhes
+      </a>
+      <button 
+        ng-click="play()"
+        class="px-4 py-1.5 bg-primary-600 hover:bg-primary-500 transition-colors text-white text-sm font-medium rounded focus:outline-none">
+        Jogar Agora
+      </button>
+    </div>
+  </div>
+</div> 

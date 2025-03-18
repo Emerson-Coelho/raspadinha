@@ -1,0 +1,30 @@
+<div class="scratch-card-container relative">
+  <!-- Área da raspadinha -->
+  <canvas class="scratch-surface"></canvas>
+  
+  <!-- Conteúdo sob a raspadinha -->
+  <div class="scratch-content absolute top-0 left-0 w-full h-full flex items-center justify-center text-center">
+    <div ng-if="gameData.type === 'symbols'">
+      <!-- Layout para raspadinha de símbolos -->
+      <div class="grid grid-cols-3 gap-2 w-full h-full p-2">
+        <div ng-repeat="symbol in gameData.symbols track by $index" 
+             class="flex items-center justify-center bg-gray-800 rounded-md">
+          <span class="text-2xl">{{ symbol }}</span>
+        </div>
+      </div>
+    </div>
+    
+    <div ng-if="gameData.type === 'prize'">
+      <!-- Layout para raspadinha de prêmio direto -->
+      <div class="flex flex-col items-center justify-center">
+        <div class="text-3xl font-bold mb-2">{{ gameData.prizeAmount }}</div>
+        <div class="text-lg">{{ gameData.prizeText }}</div>
+      </div>
+    </div>
+    
+    <div ng-if="gameData.type === 'message'">
+      <!-- Layout para mensagem simples -->
+      <div class="text-xl p-4">{{ gameData.message }}</div>
+    </div>
+  </div>
+</div> 

@@ -1,0 +1,198 @@
+<div class="container mx-auto px-4 py-8">
+  <!-- Spinner de carregamento -->
+  <loading-spinner 
+    show="vm.isLoading" 
+    text="Carregando jogos..."
+    type="cards"
+    color="primary"
+    size="lg"
+    fullScreen="true">
+  </loading-spinner>
+  
+  <!-- Mensagem de erro -->
+  <div ng-if="vm.error" class="alert alert-error">{{ vm.error }}</div>
+  
+  <!-- Banner principal -->
+  <div class="bg-gradient-to-r from-primary-800 to-primary-600 rounded-lg shadow-lg p-6 mb-8 animate-fade-in">
+    <div class="flex flex-col md:flex-row items-center justify-between">
+      <div class="mb-6 md:mb-0">
+        <h1 class="text-3xl md:text-4xl font-bold text-white mb-4">Raspadinha Online</h1>
+        <p class="text-white text-lg mb-6">Experimente sua sorte e ganhe prêmios instantâneos!</p>
+        <div class="flex space-x-4">
+          <button 
+            ng-if="!vm.isAuthenticated" 
+            ng-click="vm.goToLogin()"
+            class="px-6 py-3 bg-white text-primary-800 hover:bg-gray-100 rounded-lg font-medium focus:outline-none transition-colors duration-200">
+            Entrar para Jogar
+          </button>
+          <button 
+            ng-click="vm.goToGames()"
+            class="px-6 py-3 bg-primary-900 bg-opacity-50 hover:bg-opacity-70 text-white rounded-lg font-medium focus:outline-none transition-colors duration-200">
+            Ver Todos os Jogos
+          </button>
+        </div>
+      </div>
+      <div class="hidden md:block">
+        <img src="assets/img/banner-cards.png" alt="Raspadinhas" class="h-48 animate-pulse">
+      </div>
+    </div>
+  </div>
+  
+  <!-- Jogos em destaque -->
+  <div ng-if="vm.featuredGames.length > 0" class="animate-slide-up">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold text-white">Jogos em Destaque</h2>
+      <a href="#!/jogos" class="text-primary-400 hover:text-primary-300 font-medium transition-colors">
+        Ver todos →
+      </a>
+    </div>
+    
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <game-card 
+        ng-repeat="game in vm.featuredGames" 
+        game="game" 
+        on-play="vm.playGame(gameId)"
+        size="md"
+        show-details="false">
+      </game-card>
+    </div>
+  </div>
+  
+  <!-- Categoria popular -->
+  <div class="mt-12 animate-slide-up" style="animation-delay: 100ms;">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold text-white">Populares</h2>
+      <a href="#!/jogos?category=populares" class="text-primary-400 hover:text-primary-300 font-medium transition-colors">
+        Ver todos →
+      </a>
+    </div>
+    
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <game-card 
+        ng-repeat="game in vm.popularGames" 
+        game="game" 
+        on-play="vm.playGame(gameId)"
+        size="md"
+        show-details="false">
+      </game-card>
+    </div>
+  </div>
+  
+  <!-- Promoções -->
+  <div class="mt-12 animate-slide-up" style="animation-delay: 200ms;" ng-if="vm.promotions.length > 0">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold text-white">Promoções</h2>
+      <a href="#!/jogos?on_sale=true" class="text-primary-400 hover:text-primary-300 font-medium transition-colors">
+        Ver todos →
+      </a>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div 
+        ng-repeat="promo in vm.promotions"
+        class="bg-gradient-to-r from-gray-800 to-gray-700 rounded-lg overflow-hidden shadow-lg">
+        <div class="flex flex-col md:flex-row">
+          <div class="md:w-1/3">
+            <img 
+              ng-src="{{promo.imageUrl}}" 
+              alt="{{promo.title}}"
+              class="w-full h-40 md:h-full object-cover">
+          </div>
+          <div class="p-6 md:w-2/3 flex flex-col justify-between">
+            <div>
+              <span class="inline-block bg-primary-600 text-white text-xs px-2 py-1 rounded mb-2">
+                {{promo.discountPercentage}}% OFF
+              </span>
+              <h3 class="text-xl font-bold text-white mb-2">{{promo.title}}</h3>
+              <p class="text-gray-300 mb-4">{{promo.description}}</p>
+            </div>
+            <div class="flex justify-between items-center">
+              <div class="text-sm text-gray-300">
+                Válido até: <span class="text-white">{{promo.endDate | date:'dd/MM/yyyy'}}</span>
+              </div>
+              <button 
+                ng-click="vm.goToPromotion(promo.id)"
+                class="px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded font-medium transition-colors">
+                Aproveitar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Benefícios -->
+  <div class="mt-16 bg-gray-800 rounded-lg p-6 animate-slide-up" style="animation-delay: 300ms;">
+    <h2 class="text-2xl font-bold text-white mb-6 text-center">Por que jogar conosco?</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div class="text-center p-4 hover:bg-gray-700 rounded-lg transition-colors duration-200">
+        <div class="text-5xl text-primary-500 mb-4">🎮</div>
+        <h3 class="text-xl font-bold text-white mb-2">Jogos Divertidos</h3>
+        <p class="text-gray-300">Uma grande variedade de jogos emocionantes para você se divertir.</p>
+      </div>
+      <div class="text-center p-4 hover:bg-gray-700 rounded-lg transition-colors duration-200">
+        <div class="text-5xl text-primary-500 mb-4">💰</div>
+        <h3 class="text-xl font-bold text-white mb-2">Prêmios Instantâneos</h3>
+        <p class="text-gray-300">Ganhe e receba seus prêmios instantaneamente na sua conta.</p>
+      </div>
+      <div class="text-center p-4 hover:bg-gray-700 rounded-lg transition-colors duration-200">
+        <div class="text-5xl text-primary-500 mb-4">🔒</div>
+        <h3 class="text-xl font-bold text-white mb-2">100% Seguro</h3>
+        <p class="text-gray-300">Jogos justos e transparentes, com total segurança para você.</p>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Últimos ganhadores -->
+  <div class="mt-16 animate-slide-up" style="animation-delay: 400ms;" ng-if="vm.recentWinners.length > 0">
+    <h2 class="text-2xl font-bold text-white mb-6">Últimos Ganhadores</h2>
+    <div class="bg-gray-800 rounded-lg p-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div 
+          ng-repeat="winner in vm.recentWinners" 
+          class="flex items-center p-3 bg-gray-700 rounded-lg">
+          <user-avatar 
+            user="winner.user" 
+            size="md"
+            show-badge="true"
+            badge-type="{{winner.prize > 100 ? 'premium' : ''}}">
+          </user-avatar>
+          <div class="ml-3">
+            <div class="text-white font-medium">{{winner.user.username}}</div>
+            <div class="text-primary-400 font-bold">
+              R$ {{winner.prize.toFixed(2)}}
+            </div>
+            <div class="text-xs text-gray-400">{{winner.date | date:'dd/MM/yyyy HH:mm'}}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Download do App -->
+  <div class="mt-16 animate-slide-up" style="animation-delay: 500ms;">
+    <div class="bg-gradient-to-r from-primary-900 to-primary-700 rounded-lg p-6">
+      <div class="flex flex-col md:flex-row items-center justify-between">
+        <div class="mb-6 md:mb-0 md:mr-8">
+          <h2 class="text-2xl font-bold text-white mb-3">Baixe nosso aplicativo</h2>
+          <p class="text-primary-100 mb-4">Jogue onde e quando quiser com nosso aplicativo mobile.</p>
+          <div class="flex space-x-4">
+            <a href="#" class="opacity-80 hover:opacity-100 transition-opacity">
+              <img src="assets/img/app-store.png" alt="App Store" class="h-10">
+            </a>
+            <a href="#" class="opacity-80 hover:opacity-100 transition-opacity">
+              <img src="assets/img/google-play.png" alt="Google Play" class="h-10">
+            </a>
+          </div>
+        </div>
+        <div class="flex justify-center">
+          <img src="assets/img/app-mockup.png" alt="App Mockup" class="h-64">
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Notification container -->
+<notification-container></notification-container> 

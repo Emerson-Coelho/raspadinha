@@ -1,0 +1,83 @@
+<!-- Cabeçalho do Site -->
+<header class="bg-gray-800 shadow-md fixed top-0 left-0 right-0 z-50">
+  <div class="container mx-auto px-4 py-3">
+    <div class="flex items-center justify-between">
+      <!-- Logo e navegação principal -->
+      <div class="flex items-center space-x-8">
+        <a href="#!/" class="flex items-center">
+          <span class="text-2xl font-bold text-primary-500">Raspadinha</span>
+        </a>
+        
+        <nav class="hidden md:flex space-x-6">
+          <a href="#!/" class="text-gray-300 hover:text-white transition-colors">
+            Início
+          </a>
+          <a href="#!/games" class="text-gray-300 hover:text-white transition-colors">
+            Jogos
+          </a>
+          <a href="#!/promotions" class="text-gray-300 hover:text-white transition-colors">
+            Promoções
+          </a>
+          <a href="#!/about" class="text-gray-300 hover:text-white transition-colors">
+            Sobre
+          </a>
+        </nav>
+      </div>
+      
+      <!-- Menu de usuário -->
+      <div class="flex items-center">
+        <!-- Botões para usuários não autenticados -->
+        <div ng-if="!$root.isAuthenticated()" class="flex space-x-2">
+          <a href="#!/login" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+            Entrar
+          </a>
+          <a href="#!/register" class="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-700 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+            Cadastrar
+          </a>
+        </div>
+        
+        <!-- Menu de usuário autenticado -->
+        <div ng-if="$root.isAuthenticated()" class="ml-4 flex items-center md:ml-6">
+          <!-- Saldo do usuário -->
+          <div class="mr-4 py-2 px-3 bg-gray-700 rounded-md">
+            <span class="text-xs text-gray-400">Saldo</span>
+            <div class="text-sm font-medium text-white">{{ $root.AuthService.user.balance | currency:'R$'}}</div>
+          </div>
+          
+          <!-- Botão de depósito -->
+          <a href="#!/deposit" class="px-3 py-1 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 mr-2">
+            Depositar
+          </a>
+          
+          <!-- Menu dropdown -->
+          <div class="ml-3 relative" ng-init="isOpen = false">
+            <div>
+              <button type="button" 
+                      class="max-w-xs bg-gray-700 rounded-full flex items-center text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-primary-500" 
+                      ng-click="isOpen = !isOpen">
+                <span class="sr-only">Abrir menu de usuário</span>
+                <span class="h-8 w-8 rounded-full bg-gray-600 flex items-center justify-center">
+                  <span class="text-white">{{ $root.AuthService.user.fullName?.charAt(0) || 'U' }}</span>
+                </span>
+                <span class="ml-2 hidden md:inline text-white">{{ $root.AuthService.user.fullName || 'Usuário' }}</span>
+              </button>
+            </div>
+            
+            <!-- Menu dropdown -->
+            <div ng-if="isOpen" 
+                 class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none z-50"
+                 ng-click="isOpen = false">
+              <a href="#!/profile" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">Seu Perfil</a>
+              <a href="#!/deposit" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">Depositar</a>
+              <a href="#!/withdraw" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">Sacar</a>
+              <a href="javascript:void(0)" ng-click="$root.AuthService.logout()" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">Sair</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Espaçador para compensar o cabeçalho fixo -->
+<div class="h-16"></div>

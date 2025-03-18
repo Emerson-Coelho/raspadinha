@@ -1,0 +1,141 @@
+<!-- Página de Cadastro -->
+<div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md w-full space-y-8">
+    <div class="text-center">
+      <h2 class="mt-6 text-3xl font-extrabold text-white">
+        Crie sua conta
+      </h2>
+      <p class="mt-2 text-sm text-gray-400">
+        Já tem uma conta? <a href="#!/login" class="font-medium text-primary-500 hover:text-primary-400">
+          Entre agora
+        </a>
+      </p>
+    </div>
+    
+    <!-- Alerta de erro -->
+    <div ng-if="vm.errorMessage" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mt-4">
+      {{ vm.errorMessage }}
+    </div>
+    
+    <!-- Alerta de sucesso -->
+    <div ng-if="vm.successMessage" class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mt-4">
+      {{ vm.successMessage }}
+    </div>
+    
+    <form class="mt-8 space-y-6" ng-submit="vm.register()">
+      <div class="space-y-4">
+        <div>
+          <label for="fullName" class="block text-sm font-medium text-gray-300">Nome completo</label>
+          <input id="fullName" name="fullName" type="text" required 
+                 class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-600 bg-gray-800 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" 
+                 placeholder="Seu nome completo"
+                 ng-model="vm.registerData.fullName">
+        </div>
+        
+        <div>
+          <label for="email" class="block text-sm font-medium text-gray-300">Email</label>
+          <input id="email" name="email" type="email" required 
+                 class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-600 bg-gray-800 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" 
+                 placeholder="seu@email.com"
+                 ng-model="vm.registerData.email">
+        </div>
+        
+        <div>
+          <label for="phoneNumber" class="block text-sm font-medium text-gray-300">Telefone (opcional)</label>
+          <input id="phoneNumber" name="phoneNumber" type="tel"
+                 class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-600 bg-gray-800 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" 
+                 placeholder="(00) 00000-0000"
+                 ng-model="vm.registerData.phoneNumber">
+        </div>
+        
+        <div>
+          <label for="password" class="block text-sm font-medium text-gray-300">Senha</label>
+          <input id="password" name="password" type="password" required 
+                 class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-600 bg-gray-800 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" 
+                 placeholder="Mínimo de 6 caracteres"
+                 ng-model="vm.registerData.password"
+                 ng-change="vm.checkPasswordStrength()">
+          
+          <!-- Indicador de força da senha -->
+          <div class="mt-2 flex gap-1" ng-if="vm.registerData.password">
+            <div class="h-1 flex-1 rounded-md" 
+                 ng-class="{
+                   'bg-red-500': vm.passwordStrength <= 1,
+                   'bg-yellow-500': vm.passwordStrength === 2 || vm.passwordStrength === 3,
+                   'bg-green-500': vm.passwordStrength >= 4
+                 }">
+            </div>
+            <div class="h-1 flex-1 rounded-md" 
+                 ng-class="{
+                   'bg-gray-500': vm.passwordStrength <= 1,
+                   'bg-yellow-500': vm.passwordStrength === 2 || vm.passwordStrength === 3,
+                   'bg-green-500': vm.passwordStrength >= 4
+                 }">
+            </div>
+            <div class="h-1 flex-1 rounded-md" 
+                 ng-class="{
+                   'bg-gray-500': vm.passwordStrength <= 2,
+                   'bg-yellow-500': vm.passwordStrength === 3,
+                   'bg-green-500': vm.passwordStrength >= 4
+                 }">
+            </div>
+            <div class="h-1 flex-1 rounded-md" 
+                 ng-class="{
+                   'bg-gray-500': vm.passwordStrength <= 3,
+                   'bg-green-500': vm.passwordStrength >= 4
+                 }">
+            </div>
+            <div class="h-1 flex-1 rounded-md" 
+                 ng-class="{
+                   'bg-gray-500': vm.passwordStrength <= 4,
+                   'bg-green-500': vm.passwordStrength >= 5
+                 }">
+            </div>
+          </div>
+          <p class="mt-1 text-xs text-gray-400" ng-if="vm.registerData.password">
+            <span ng-if="vm.passwordStrength <= 1">Senha fraca</span>
+            <span ng-if="vm.passwordStrength === 2 || vm.passwordStrength === 3">Senha média</span>
+            <span ng-if="vm.passwordStrength >= 4">Senha forte</span>
+          </p>
+        </div>
+        
+        <div>
+          <label for="confirmPassword" class="block text-sm font-medium text-gray-300">Confirme a senha</label>
+          <input id="confirmPassword" name="confirmPassword" type="password" required 
+                 class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-600 bg-gray-800 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" 
+                 placeholder="Repita sua senha"
+                 ng-model="vm.registerData.confirmPassword">
+        </div>
+        
+        <div class="flex items-center">
+          <input id="acceptTerms" name="acceptTerms" type="checkbox" 
+                 class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-600 bg-gray-800 rounded"
+                 ng-model="vm.registerData.acceptTerms">
+          <label for="acceptTerms" class="ml-2 block text-sm text-gray-300">
+            Aceito os <a href="#!/terms" class="text-primary-500 hover:text-primary-400">termos de uso</a> e <a href="#!/privacy" class="text-primary-500 hover:text-primary-400">política de privacidade</a>
+          </label>
+        </div>
+      </div>
+
+      <div>
+        <button type="submit" 
+                class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                ng-disabled="vm.isLoading">
+          <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+            <svg class="h-5 w-5 text-primary-500 group-hover:text-primary-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+            </svg>
+          </span>
+          <span ng-if="!vm.isLoading">Criar conta</span>
+          <span ng-if="vm.isLoading">Criando...</span>
+        </button>
+      </div>
+    </form>
+    
+    <div class="text-center mt-6">
+      <a href="#!/" class="text-sm text-primary-500 hover:text-primary-400">
+        ← Voltar para a página inicial
+      </a>
+    </div>
+  </div>
+</div> 
